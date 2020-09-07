@@ -1,0 +1,85 @@
+
+
+{include file="public/header"}
+    <link rel="stylesheet" href="__HOME__/home/css/abouts.css">
+<div class="layui-fluid bgcimg">
+    <div class="header cleafix">
+        {include file="public/nav"}
+    </div>
+    <div class="layui-row bgclogo">
+        <img src="__HOME__/home/images/关于我们/LOGO竖版.png">
+    </div>
+    <div class="layui-row bgccontent">
+        公司介绍
+    </div>
+    <div class="layui-container">
+        <div class="layui-row">
+            <div class="layui-col-md11">
+                <div class="layui-row titles">
+                    <h3>陕西天屿懿德信息科技有限公司主要致力于</h3>
+                </div>
+                <div class="layui-row title_con">
+                    <p>网络线上平台搭建自己的用户体系，帮助电销网络商家做商品推广来获得营收。
+                        公司提供整合营销、品牌运营、新媒体运营、电商服务等在内的专业化一体式电子商务协作，</p>
+                    <p>	为客户提供创造性、实效性的电子商务服务。</p>
+                </div>
+            </div>
+            <div class="layui-col-md1 title_detail">
+                <ul>
+                    <li>公司介绍</li>
+                    <li>企业文化</li>
+                    <li>主要业务</li>
+                </ul>
+            </div>
+        </div>
+        <div class="layui-row con_numbers">
+            <ul>
+                <li>
+                    <div class="numbers">50+</div>
+                    <span>网络线上用户</span>
+                </li>
+                <li>
+                    <div class="numbers">50+</div>
+                    <span>合作商家</span>
+                </li>
+                <li>
+                    <div class="numbers">50+</div>
+                    <span>成交量</span>
+                </li>
+                <li>
+                    <div class="numbers">50+</div>
+                    <span>合作用户</span>
+                </li>
+            </ul>
+        </div>
+        <div class="layui-row logoimgs">
+            <img src="__HOME__/images/关于我们/企业文化.png">
+        </div>
+        <div class="layui-row main_title1">
+            <h1>主要业务</h1>
+        </div>
+        <div class="layui-row main_title2">
+            <h4>网络线上平台搭建自己的用户体系-帮助电销网络商家做商品推广</h4>
+        </div>
+        <div class="layui-row mainimg">
+            <img src="__HOME__/home/images/关于我们/主要业务.png">
+        </div>
+    </div>
+</div>
+<!-- footer -->
+{include file="public/footer"}
+<script>
+    //一般直接写在一个js文件中
+    layui.use(['layer', 'element','form'], function(){
+        var layer = layui.layer
+            ,form = layui.form
+            ,element = layui.element;
+
+        //监听导航点击
+        element.on('nav(demo)', function(elem){
+            //console.log(elem)
+            layer.msg(elem.text());
+        });
+    });
+
+</script>

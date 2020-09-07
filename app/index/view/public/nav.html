@@ -1,0 +1,24 @@
+<div class="logo fl">
+    <a href="{:url('index/index')}"><img src='{$company_logo}' class=""></a>
+</div>
+<div class="top_navs fr">
+    <div id="navs_list">
+        <ul class="navs_list1 ">
+            {volist name="nav_list" id="vo"}
+            <li><a href="{:url($vo['url_href'])}">{$vo.title}</a></li>
+            {/volist}
+        </ul>
+    </div>
+    <img src="__HOME__/home/images/menu.png" class="navxian" onclick="on_display()"/>
+</div>
+
+<script type="application/javascript">
+    var host = "http://"+ window.location.host+"/";
+    // var host2 =document.domain;
+    //获取页面完整地址
+    var url = window.location.href; /* 获取完整URL */;
+    if(url == host || url == host+"index/index/index.html"){
+        $(".logo").hide()
+    }
+
+</script>

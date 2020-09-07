@@ -1,0 +1,357 @@
+	/* 遮罩层 */
+#mask_cover{
+	position:absolute;
+	z-index:999;
+	left:0;
+	top:0;
+	display:none;
+	width:100%;
+	height:100%;
+	background: rgba(0,0,0,0.5);
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#aa000000',endColorstr='#aa000000');      /*IE6,IE7*/ 
+    -ms-filter:"progid:DXImageTransform.Microsoft.gradient(startColorstr='#aa000000', endColorstr='#aa000000')";      /*IE8*/ 
+} 
+
+/* 回到顶部 */
+.back_top{
+	width: 50px;
+	height: 50px;
+	position: fixed;
+	bottom: 170px;
+	right:2%;
+	z-index: 9999;
+}
+.quick_toggle ul li {
+	width: 50px;
+	height: 50px;
+	background: url(../images/top.png) no-repeat;
+	cursor: pointer;
+}
+.quick_toggle ul li:hover{
+	background: url(../images/top_hov.png) no-repeat;
+}
+/*回到顶部*/
+.quick_toggle ul li.gotop{
+	z-index: 1;
+}
+.quick_toggle ul li.gotop em{
+	display: inline-block;
+	width: 70px;
+	height: 80px;
+	background: url(../images/store_ico11.png) center center no-repeat;
+}
+.quick_toggle ul li.gotop em:hover{
+	background: url(../images/store_ico11_hov.png) center center no-repeat;
+}
+@-webkit-keyframes toolbar-scaleIn{
+	from{
+		opacity:.7;
+		-webkit-transform:translateX(270px)
+	}
+	to{
+		-webkit-transform:translateX(0px)
+	}
+}
+@-ms-keyframes toolbar-scaleIn{
+	from{
+		opacity:.7
+	}
+}
+@-moz-keyframes toolbar-scaleIn{
+	from{
+		opacity:.7;
+		-moz-transform:translateX(270px)
+	}
+	to{
+		-moz-transform:translateX(0px)
+	}
+}
+@keyframes toolbar-scaleIn{
+	from{
+		opacity:.7;
+		transform:translateX(270px)
+	}
+	to{
+		transform:translateX(0px)
+	}
+}
+@-webkit-keyframes toolbar-scaleOut{
+	to{
+		opacity:.5;
+		-webkit-transform:scale(0.7) translateX(270px)
+	}
+}
+
+@-ms-keyframes toolbar-scaleOut{
+	to{
+		opacity:.5
+	}
+}
+
+@-moz-keyframes toolbar-scaleOut{
+	to{
+		opacity:.5;
+		-moz-transform:scale(0.7) translateX(270px)
+	}
+}
+
+@keyframes toolbar-scaleOut{
+	to{
+		opacity:.5;
+		transform:scale(0.7) translateX(270px)
+	}
+}
+
+/*banner-nav*/
+.top_navs{
+	position: relative;
+}
+#navs_list{
+	width: 710px;
+	height: 65px;
+	background-color: rgba(255, 255, 255, 1);
+	right: 65px;
+	position: absolute;
+	display: none;
+}
+ #navs_list li {
+	margin: 16px 0;
+	display: inline-block;
+	color: rgba(0, 36, 84, 1);
+	padding: 0 5%;
+	border-right:1px solid rgba(0, 36, 84, 1);
+	text-align: left;
+	font-size: 22px;
+}
+#navs_list li:last-child{
+	border-right:none;
+}
+.navxian{
+	cursor: pointer;
+}
+.avatar a{
+	color: #0b42c9;
+}
+/*banner*/
+.layui-fluid{
+    padding: 0;
+	margin: 0;
+}
+body{
+	height: auto;
+	background-size: 100% 100%;
+	background-image: url(../images/产品中心背景.png);
+	background-repeat: no- repeat; 
+}
+.bgcimg{
+	padding-bottom: 400px;
+    background-size: 100% 100%;
+    background-image: url(../images/12.png);
+    background-repeat: no- repeat; 
+	z-index: 999999;
+}
+/* main */
+.procontent{
+	width: 87%;
+	margin: 0px auto;
+	height: 75px;
+	padding-top: 30px;
+}
+.procontent h3{
+	color: rgba(80, 80, 80, 1);
+	font-size: 3.125rem;
+	font-weight: bold;
+	/* width: 100%; */
+	border-bottom:3px solid #113cd3;
+}
+.topxq{
+	width: 87%;
+	margin: 20px auto;
+	letter-spacing: 6px;
+	color: rgba(80, 80, 80, 1);
+	font-size: 1.625rem;
+	font-weight: bold;
+}
+/*搜索*/
+.seacrch1{
+	width: 80%; 
+	margin: auto;
+}
+.seacrch1_div{
+	display: inline-block;width: 87%;z-index: -2;vertical-align: bottom; margin-left: 0;
+}
+.seacrch1_div input{
+	width: 105%; height: 50px;
+}
+.seacrch1_button{
+	z-index: 2;
+	margin-left: -1px;
+}
+.layui-input, .layui-textarea{
+	/* padding: 25px 140px; */
+	border-radius: 10px;
+	font-size: 0.875rem;
+} 
+.layui-btn{
+	background-color: rgba(17, 60, 211, 1);
+	padding: 25px 25px;
+	border-radius: 10px;
+	line-height: 1px;
+	font-size: 1.125rem;
+}	
+/*问题解决方案*/
+.solutions{
+	width: 88%;
+	margin: 0px auto;
+	padding-top:50px;
+}
+.solutions ul li{
+	margin: 40px 0;
+}
+.solutions ul li h3{
+	/* height: 36px; */
+	letter-spacing: 2px;
+	color: rgba(80, 80, 80, 1);
+	font-size: 1.5rem;
+	text-align: left;
+	font-weight: 500;
+}
+.solutions ul li p{
+	/* height: 54px; */
+	color: rgba(80, 80, 80, 0.7);
+	font-size: 1.125rem;
+	text-align: left;
+	padding: 10px;
+}
+#demo1{
+	width: 34%;
+	margin: 0px auto;
+	padding: 40px 0 100px ;
+}
+.layui-laypage .layui-laypage-curr .layui-laypage-em {
+	background-color: #0000FF;
+}
+/*页脚*/
+*{
+	box-sizing: unset;
+}
+.footer{
+	margin-top: 100px;
+}
+#container {
+    width: 100%;
+    height: 400px;
+}
+.amap-info-content {
+    position: relative;
+    background: #fff;
+    padding: 10px 18px 10px 10px;
+    line-height: 36.4px;
+    overflow: auto;
+    width: 357px;
+    height: 128px;
+	background-color: rgba(9,9,9,0.5);
+	color: #fff;
+	font-size: 13px;
+}
+@media screen and (min-width:798px) and (max-width:1200px){
+	.bgcimg{
+		padding-bottom: 320px;
+	}
+	#demo1{
+		width: 55%!important;
+	}
+    .seacrch1_div{
+		width: 79%;
+	}
+}
+@media screen and (min-width:548px) and (max-width:798px){
+	.procontent h3{
+		font-size: 35px;
+	}
+	.bgcimg{
+		padding-bottom: 220px;
+	}
+	#demo1{
+		width: 65%!important;
+	}
+	
+    .seacrch1_div{
+		width: 70%;
+	}
+}
+@media screen and (min-width:320px) and (max-width:698px){
+	/* 导航 */
+	.header .logo img{
+		width: 120px;
+		height: 42px;
+	}
+	#navs_list {
+	    width: 110px;
+	    height: 165px;
+	    right: 42px;
+	    border-radius: 5px;
+	    opacity: 0.8;
+	}
+	#navs_list li {
+	    width: 105px;
+	    height: 40px;
+	    line-height: 40px;
+		margin: 0;
+	    text-align: center;
+	    padding: 0 2%;
+		border-right: none;
+	    border-bottom: 1px solid #eee;
+	    font-size: 14px;
+	}
+	.top_navs img{
+		width: 42px;
+	}
+	.procontent{
+		height: 45px;
+	}
+	.procontent h3{
+		font-size: 30px;
+	}
+	.bgcimg{
+		padding-bottom: 150px;
+	}
+	.topxq{
+		font-size: 20px;
+		width: 93%;
+		letter-spacing: 3px;
+	}
+	.solutions ul li h3{
+		font-size: 18px!important;
+	}
+	.solutions ul li p{
+		font-size: 15px!important;
+	}
+	#demo1{
+		width: 100%!important;
+		padding: 0;
+		text-align: center;
+	}	
+	.layui-laypage a, .layui-laypage span{
+		padding: 0 10px;
+	}
+    .seacrch1_div{
+		width: 72%;
+	}
+	.seacrch1_div input{
+		height: 40px;
+	}
+	.seacrch1_button{
+		padding: 0px 12px!important;
+		font-size: 15px!important;
+	}
+	#container{
+		height: 200px;
+	}
+	.amap-info-content{
+		width: 200px;
+		height: 100px;
+		line-height: 23px;
+		font-size: 10px;
+	}
+}

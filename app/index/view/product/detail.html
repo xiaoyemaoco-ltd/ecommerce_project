@@ -1,0 +1,120 @@
+{include file="public/header"}
+
+<link rel="stylesheet" href="__HOME__/home/css/detail.css">
+
+<div class="layui-fluid bgcimg">
+    <div class="header cleafix">
+        {include file="public/nav"}
+    </div>
+</div>
+<div class="layui-fluid bgcimg2">
+    <div class="layui-container centers">
+			<span class="layui-breadcrumb" lay-separator="|">
+			  <a href="./index.html">首页</a>
+			  <a href="./solution.html">产品解决方案</a>
+			  <a href="./detail.html">解决方案</a>
+			</span>
+        <div class="box2">
+            <div class="layui-row bgccontent procontent">
+                <h3>产品解决方案</h3>
+            </div>
+            <div class="pddlogo">
+                <img src="__HOME__/home/images/关于我们/拼多多.png" >
+            </div>
+        </div>
+        <div class="layui-row topxq proxq">
+            下载安装常见问题解决方案
+        </div>
+
+        <div class="layui-row solutions">
+            <h3>下载安装常见问题解决方案</h3>
+            <div class="liulan">
+                <ul>
+                    <li><img src="__HOME__/home/images/关于我们/30+30浏览.png">111</li>
+                    <li><img src="__HOME__/home/images/关于我们/30+30有用 (2).png">111</li>
+                </ul>
+            </div>
+            <div id="" style="clear: both;"></div>
+            <p>      文本简介：现在来看，UI的本职工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉
+                我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互文本简介：现在来看，UI的本职工作内容
+                随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉。</p>
+
+            <p> 我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互文本简介：现在来看，UI的本职工作
+                内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉</p>
+
+            <p> 我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互      文本简介：现在来看，UI的本职
+                工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉我们都要涉及。这次课程的中心就在
+                于为大家讲解在工作当中，我们遇到的动效交互      文本简介：现在来看，UI的本职工作</p>
+
+            <p> 内容随着互联网产品的发展，慢慢在横向延伸，产品，交互，动效，建模，视觉我们都要涉及。这次课程的中心就在于为
+                大家讲解在工作当中，我们遇到的动效交互      文本简介：现在来看，UI的本职工作内容随着互联网产品的发展，慢慢的在做
+                横向延伸，产品，交互，动效，建模，视觉</p>
+
+            <p> 我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互      文本简介：现在来看，UI的本职
+                工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉</p>
+
+            <p> 文本简介：现在来看，UI的本职工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉
+                我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互文本简介：现在来看，UI的本职工作内容
+                随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉。</p>
+        </div>
+        <div class="layui-row nexts">
+            <div class="layui-col-md5 nexts_top">
+                上一篇：下载安装常见问题......
+            </div>
+            <div class="layui-col-md4 nexts_center">
+                <span><img src="__HOME__/home/images/关于我们/没用.png" ></span><span><img src="__HOME__/home/images/关于我们/有用.png" ></span>
+            </div>
+            <div class="layui-col-md3 nexts_bottom">
+                下一篇：下载安装常见问题......
+            </div>
+        </div>
+    </div>
+</div>
+<!-- footer -->
+{include file="public/footer"}
+<script>
+    //一般直接写在一个js文件中
+    layui.use(['layer', 'element','form'], function(){
+        var layer = layui.layer
+            ,form = layui.form
+            ,element = layui.element;
+
+        //监听导航点击
+        element.on('nav(demo)', function(elem){
+            //console.log(elem)
+            layer.msg(elem.text());
+        });
+    });
+
+    // $('#searchBtn').on('click',function(){
+    //         var type = $(this).data('type');
+    //         active[type] ? active[type].call(this) : '';
+    //     });
+    //     // 点击获取数据
+    //     var  active = {
+    //         getInfo: function () {
+    //             var orderId=$('#select_orderId').val();
+    //             if (orderId) {
+    //                 var index = layer.msg('查询中，请稍候...',{icon: 16,time:false,shade:0});
+    //                 setTimeout(function(){
+    //                     table.reload('LAY-app-message-all', { //表格的id
+    //                         url:'/Order/selectByOrderId',
+    //                         where: {
+    //                             'orderId':$.trim(orderId)
+    //                         }
+    //                     });
+    //                     layer.close(index);
+    //                 },800);
+    //             } else {
+    //                 layer.msg("请输入编号");
+    //             }
+    //         },
+    //     };
+    //   //监听回车事件,扫描枪一扫描或者按下回车键就直接执行查询
+    //     $("#select_orderId").bind("keyup", function (e) {
+    //         if (e.keyCode == 13) {
+    //             var type = "getInfo";
+    //             active[type] ? active[type].call(this) : '';
+    //         }
+    //     });
+</script>

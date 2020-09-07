@@ -1,0 +1,111 @@
+{include file="public/header"}
+    <title>解决方案</title>
+
+    <link rel="stylesheet" href="__HOME__/home/css/solution.css">
+
+<div class="layui-fluid bgcimg">
+    <div class="header cleafix">
+        {include file="public/nav"}
+    </div>
+</div>
+<div class="layui-fluid bgcimg2">
+    <div class="layui-container">
+        <div class="box2">
+            <div class="layui-row bgccontent procontent">
+                <h3>产品解决方案</h3>
+            </div>
+            <div class="layui-row topxq proxq">
+                下载安装常见问题解决方案
+            </div>
+        </div>
+        <div class="layui-row seacrch1">
+            <!-- <form class="layui-form" action="" style="width: 100%; margin: 40px auto;"> -->
+            <div class=" seacrch1_div" >
+                <input  type="text" id="select_orderId" name="select_orderId"  placeholder="请输入问题" autocomplete="off" class="layui-input">
+            </div>
+            <button class="layui-btn seacrch1_button" lay-submit="" id="searchBtn" data-type="getInfo" >搜索</button>
+            <!-- </form> -->
+        </div>
+        <div class="layui-row solutions">
+            <ul>
+                <li>
+                    <h3>下载安装常见问题解决方案</h3>
+                    <p>文本简介：现在来看，UI的本职工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉
+                        我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互......</p>
+                </li>
+                <li>
+                    <h3>下载安装常见问题解决方案</h3>
+                    <p>文本简介：现在来看，UI的本职工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉
+                        我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互......</p>
+                </li>
+                <li>
+                    <h3>下载安装常见问题解决方案</h3>
+                    <p>文本简介：现在来看，UI的本职工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉
+                        我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互......</p>
+                </li>
+                <li>
+                    <h3>下载安装常见问题解决方案</h3>
+                    <p>文本简介：现在来看，UI的本职工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉
+                        我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互......</p>
+                </li>
+                <li>
+                    <h3>下载安装常见问题解决方案</h3>
+                    <p>文本简介：现在来看，UI的本职工作内容随着互联网产品的发展，慢慢的在做横向延伸，产品，交互，动效，建模，视觉
+                        我们都要涉及。这次课程的中心就在于为大家讲解在工作当中，我们遇到的动效交互......</p>
+                </li>
+            </ul>
+        </div>
+        <div id="demo1"></div>
+    </div>
+</div>
+<!-- footer -->
+{include file="public/footer"}
+<script>
+    //一般直接写在一个js文件中
+    layui.use(['laypage', 'layer', 'form'], function(){
+        var layer = layui.layer
+            ,form = layui.form
+            ,laypage = layui.laypage;
+        laypage.render({
+            elem: 'demo1'
+            ,count: 50 //数据总数
+            ,jump: function(obj){
+                console.log(obj)
+            }
+        });
+    });
+
+
+
+    // $('#searchBtn').on('click',function(){
+    //         var type = $(this).data('type');
+    //         active[type] ? active[type].call(this) : '';
+    //     });
+    //     // 点击获取数据
+    //     var  active = {
+    //         getInfo: function () {
+    //             var orderId=$('#select_orderId').val();
+    //             if (orderId) {
+    //                 var index = layer.msg('查询中，请稍候...',{icon: 16,time:false,shade:0});
+    //                 setTimeout(function(){
+    //                     table.reload('LAY-app-message-all', { //表格的id
+    //                         url:'/Order/selectByOrderId',
+    //                         where: {
+    //                             'orderId':$.trim(orderId)
+    //                         }
+    //                     });
+    //                     layer.close(index);
+    //                 },800);
+    //             } else {
+    //                 layer.msg("请输入编号");
+    //             }
+    //         },
+    //     };
+    //   //监听回车事件,扫描枪一扫描或者按下回车键就直接执行查询
+    //     $("#select_orderId").bind("keyup", function (e) {
+    //         if (e.keyCode == 13) {
+    //             var type = "getInfo";
+    //             active[type] ? active[type].call(this) : '';
+    //         }
+    //     });
+</script>
