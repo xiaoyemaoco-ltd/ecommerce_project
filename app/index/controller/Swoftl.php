@@ -17,7 +17,7 @@ class Swoftl extends BaseController{
 
     public function process()
     {
-        dump(11111);die;
+        dump(11111);
         set_time_limit(0);
         $forkNums = 20; //开启的进程数
 //        if (!function_exists("pcntl_fork")) {
