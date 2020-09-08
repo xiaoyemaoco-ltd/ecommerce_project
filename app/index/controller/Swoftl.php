@@ -14,4 +14,18 @@ class Swoftl extends BaseController{
     public function index(){
         return $this->fetch();
     }
+
+    public function process()
+    {
+        set_time_limit(0);
+        $forkNums = 20; //开启的进程数
+//        if (!function_exists("pcntl_fork")) {
+//            die("pcntl extention is must !");
+//        }
+
+        for ($i=0;$i<$forkNums;$i++) {
+            $pid = pcntl_fork();    //创建子进程
+            dump($pid);
+        }
+    }
 }

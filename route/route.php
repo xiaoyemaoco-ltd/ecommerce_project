@@ -6,7 +6,6 @@
  * Time: 10:54
  */
 use think\facade\Route;
-Route::get('index/Swoftl/index', 'index/Swoftl/index');
 
 Route::group('api',function (){
     Route::post('sms/send','api/sms/send'); //发送验证码、
