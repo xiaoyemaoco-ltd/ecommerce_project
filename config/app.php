@@ -13,13 +13,13 @@ return [
     // 是否启用路由
     'with_route'       => true,
     // 是否启用事件
-    'with_event'       => true,
+    'with_event'       => false,
     // 自动多应用模式
     'auto_multi_app'   => true,
     // 应用映射（自动多应用模式有效）
     'app_map'          => ['*'=>'', 'api'=>'api', 'admin'=>'admin','wap'=>'wap'],
     // 默认应用
-    'default_app'      => 'index',
+    'default_app'      => '',
     // 默认时区
     'default_timezone' => 'Asia/Shanghai',
     // 域名绑定（自动多应用模式有效）
