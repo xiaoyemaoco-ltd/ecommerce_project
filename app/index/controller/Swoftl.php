@@ -25,6 +25,22 @@ class Swoftl extends BaseController{
 
         for ($i=0;$i<$forkNums;$i++) {
             $pid = pcntl_fork();    //创建子进程
+            if ($pid == -1) {
+                //错误处理：创建子进程失败时返回-1.
+                die('could not fork');
+            } elseif ($pid) {
+                pcntl_wait($status,WNOHANG);
+                dump(11111);
+            } else {
+                $list = [123, 456, 789];
+                foreach($list as $key=>$value){
+                    //这里调用第三方接口，该过程大概需要3s
+                    dump($value);
+                    // ...  这里再对获取到的卡号信息进行自己相关的业务处理
+                }
+                unset($list);
+                exit(0);
+            }
         }
     }
 }
