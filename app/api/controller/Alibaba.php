@@ -33,7 +33,7 @@ class Alibaba
             'need_refresh_token' => false,
             'client_id' => $this->client_id,
             'client_secret' => $this->client_secret,
-            'redirect_uri' => 'https://www.sxtyyd.com/api/alibaba/back',
+            'redirect_uri' => 'http://www.sxtyyd.com/api/alibaba/back',
 //            'redirect_uri' => 'https://test.tianyuyide5qqcom.yxnat.softdev.top/api/alibaba/back',
             'code' => $code
         ];

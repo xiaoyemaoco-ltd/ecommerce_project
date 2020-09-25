@@ -116,9 +116,9 @@ class User extends Api{
 
             $data['logincount'] = ($result['logincount'] + 1);
             $data['loginip'] = get_client_ip();
-            $data['1ogin_status'] = 1;
+            $data['login_status'] = 1;
             $data['seisonid'] = md5($username.$password.get_client_ip());
-            $data['logintime'] = date_ymd();
+            $data['logintime'] = time();
             $token = Random::uuid();
             $time_out = strtotime("+7 days");
             $res = Db::name('user') -> where('id',$result['id']) -> update($data);
