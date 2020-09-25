@@ -33,10 +33,10 @@ class HandleData extends BaseController
      * @param Request $request
      * @return false|string
      */
-    public function productAdd($id)
+    public function productAdd(Request $request)
     {
-//        if (!$request->isPost()) return return_value('fail', '请求方式错误', 10001);
-//        $id = $request->post('goodsId');
+        if (!$request->isPost()) return return_value('fail', '请求方式错误', 10001);
+        $id = $request->post('goodsIds');
 //        dump($id);die;
         $data = $this->getDoodsDetail($id);
         $namespace = 'com.alibaba.product';
@@ -433,7 +433,7 @@ class HandleData extends BaseController
             'access_token' => $this->access_token
         ];
         $data = $this->getAPiData($data, $namespace, $apiName);
-        return $data;
+        return return_value('ok', '获取成功', $data, 10000);
     }
 
     /**
