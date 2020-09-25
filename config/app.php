@@ -17,7 +17,7 @@ return [
     // 自动多应用模式
     'auto_multi_app'   => true,
     // 应用映射（自动多应用模式有效）
-    'app_map'          => ['*'=>'', 'api'=>'api', 'admin'=>'admin','wap'=>'wap'],
+    'app_map'          => ['*'=>'', 'api'=>'api', 'admin'=>'admin','wap'=>'wap', 'alibaba' => 'alibaba'],
     // 默认应用
     'default_app'      => '',
     // 默认时区

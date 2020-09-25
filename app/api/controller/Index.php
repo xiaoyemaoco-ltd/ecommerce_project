@@ -70,6 +70,9 @@ class Index extends Api{
         $query = 'response_type=code&client_id='.$appkey. '&redirect_uri=' .urlencode($backurl) . '&state=1212';
         $url = '';
         switch ($type){
+            case 'alibaba':
+                $url = $loginurl . '?client_id=' . $appkey .'&site=1688&redirect_uri='. urlencode($backurl) .'&state=YOUR_PARM';
+                break;
             case 'taobao':
                 $url = $loginurl;
                 break;
