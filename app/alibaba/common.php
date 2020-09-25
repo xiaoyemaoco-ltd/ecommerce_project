@@ -98,8 +98,12 @@ if (!function_exists('post_curls')) {
     }
 }
 
+/**
+ * 返回
+ */
 if (!function_exists('return_value')) {
-    function return_value($status,$msg, $data = null, $code = 0){
+    function return_value($status,$msg, $data = null, $code = 0)
+    {
         $result = [
             'status' => $status,
             'code' => $code,
@@ -108,6 +112,29 @@ if (!function_exists('return_value')) {
             'data' => $data,
         ];
         return json_encode($result);
+    }
+}
+
+/**
+ * 获取相似度高的值
+ */
+if (!function_exists('closest_word')) {
+    function closest_word($input, $words)
+    {
+        $shortest = -1;
+        foreach ($words as $word) {
+            $lev = levenshtein($input, $word['name']);
+            if ($lev == 0) {
+                $closest = $word['categoryID'];
+                $shortest = 0;
+                break;
+            }
+            if ($lev <= $shortest || $shortest < 0) {
+                $closest = $word['categoryID'];
+                $shortest = $lev;
+            }
+        }
+        return $closest;
     }
 }
 
