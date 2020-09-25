@@ -11,7 +11,7 @@ Route::group('api',function (){
     Route::post('sms/send','api/sms/send'); //发送验证码、
     /****************     会员   ************/
     Route::post('user/register','api/user/register') ; //用户注册接口
-    Route::any('user/login','api/user/login'); //登录接口
+    Route::any('user/login','api/user/login')->allowCrossDomain(); //登录接口
     Route::any('user/forget_pass','api/user/forget_pass'); //忘记密码
     Route::any('user/outlogin','api/user/outlogin'); //退出登录
     /****************   会员   ************/
