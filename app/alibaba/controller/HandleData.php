@@ -36,19 +36,34 @@ class HandleData extends BaseController
     public function productAdd(Request $request)
     {
         if (!$request->isPost()) return return_value('fail', '请求方式错误', 10001);
-        $id = $request->post('goodsIds');
+        $template_id = $request->post('template_id');
+        if (!$template_id) return return_value('fail', '运费模板不能为空', 10003);
+        $ids = $request->post('goodsids');
+        if (!$ids) return return_value('fail', '商品ID不能为空', 10003);
+
+        $res = [];
+        if (Redis::get($ids)) {
+            $res = json_decode(Redis::get($ids), 1);
+        } else {
+            $goodsId = explode(',', $ids);
+            $id = array_shift($goodsId);
+            do{
+                $res[] = $this->getDoodsDetail($id, $template_id);
+            }while($a = array_shift($goodsid));
+            $row = json_encode($res);
+            Redis::set($ids, $row, 2592000);
+        }
 //        dump($id);die;
-        $data = $this->getDoodsDetail($id);
         $namespace = 'com.alibaba.product';
         $apiName = 'alibaba.product.add';
-        $data['access_token'] = $this->access_token;
-//        dump($data);die;
-        $res = $this->getAPiData($data, $namespace, $apiName);
-        dump($res);die;
-        return $data;
+        foreach ($res as $k => $v) {
+            $v['access_token'] = $this->access_token;
+            $this->getAPiData($v, $namespace, $apiName);
+        }
+        return return_value('ok', '上传成功', 10000);
     }
 
-    public function getDoodsDetail($goodsId)
+    public function getDoodsDetail($goodsId, $template_id)
     {
         $obapi = $this->openkey();
         $goodsDetail = $obapi->exec([
@@ -90,7 +105,8 @@ class HandleData extends BaseController
 //        dump($skuAttr);die;
         $skuInfo = $this->handleSkuInfo($goodsDetail['item']['skus']['sku'], $skuAttr, $goodsDetail['item']['prop_imgs']['prop_img']);
 //        dump($skuInfo);die;
-        $shipInfo = $this->getFreightTemplateById(14185977);
+        $shipInfo = $this->getFreightTemplateById($template_id);
+//        $shipInfo = $this->getFreightTemplateById(14185977);
 
         //上传图片到相册
         $images = array_column($goodsDetail['item']['item_imgs'], 'url');
@@ -433,7 +449,7 @@ class HandleData extends BaseController
             'access_token' => $this->access_token
         ];
         $data = $this->getAPiData($data, $namespace, $apiName);
-        return return_value('ok', '获取成功', $data, 10000);
+        return return_value('ok', '获取成功', 10000, $data);
     }
 
     /**
