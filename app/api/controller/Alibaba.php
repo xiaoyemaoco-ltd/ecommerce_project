@@ -33,7 +33,8 @@ class Alibaba
             'need_refresh_token' => false,
             'client_id' => $this->client_id,
             'client_secret' => $this->client_secret,
-            'redirect_uri' => 'https://test.tianyuyide5qqcom.yxnat.softdev.top/api/alibaba/back',
+            'redirect_uri' => 'https://www.sxtyyd.com/api/alibaba/back',
+//            'redirect_uri' => 'https://test.tianyuyide5qqcom.yxnat.softdev.top/api/alibaba/back',
             'code' => $code
         ];
         $url = 'https://gw.open.1688.com/openapi/http/1/system.oauth2/getToken/' . $this->client_id;
