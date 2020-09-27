@@ -56,7 +56,7 @@ class HandleData extends BaseController
             $id = array_shift($goodsId);
             do{
                 $res[] = $this->getDoodsDetail($id, $shipInfo);
-            } while ($a = array_shift($goodsid));
+            } while ($id = array_shift($goodsid));
             $row = json_encode($res);
             Redis::set($ids, $row, 2592000);
         }
