@@ -36,8 +36,15 @@ class HandleData extends BaseController
     public function productAdd(Request $request)
     {
         if (!$request->isPost()) return return_value('fail', '请求方式错误', 10001);
-        $template_id = $request->post('template_id');
-        if (!$template_id) return return_value('fail', '运费模板不能为空', 10003);
+        $template = $request->post('template');
+        if (!$template) return return_value('fail', '运费模板不能为空', 10003);
+        list($addressCodeText, $fromAreaCode, $id) = explode('-', $template);
+        // 运费模板
+        $shipInfo = [
+            'freightTemplateID' => $id,
+            'sendGoodsAddressText' => $addressCodeText,
+            'sendGoodsAddressId' => $fromAreaCode
+        ];
         $ids = $request->post('goodsids');
         if (!$ids) return return_value('fail', '商品ID不能为空', 10003);
 
@@ -48,7 +55,7 @@ class HandleData extends BaseController
             $goodsId = explode(',', $ids);
             $id = array_shift($goodsId);
             do{
-                $res[] = $this->getDoodsDetail($id, $template_id);
+                $res[] = $this->getDoodsDetail($id, $shipInfo);
             }while($a = array_shift($goodsid));
             $row = json_encode($res);
             Redis::set($ids, $row, 2592000);
@@ -63,7 +70,7 @@ class HandleData extends BaseController
         return return_value('ok', '上传成功', 10000);
     }
 
-    public function getDoodsDetail($goodsId, $template_id)
+    public function getDoodsDetail($goodsId, $shipInfo)
     {
         $obapi = $this->openkey();
         $goodsDetail = $obapi->exec([
@@ -105,7 +112,7 @@ class HandleData extends BaseController
 //        dump($skuAttr);die;
         $skuInfo = $this->handleSkuInfo($goodsDetail['item']['skus']['sku'], $skuAttr, $goodsDetail['item']['prop_imgs']['prop_img']);
 //        dump($skuInfo);die;
-        $shipInfo = $this->getFreightTemplateById($template_id);
+//        $shipInfo = $this->getFreightTemplateById($template_id);
 //        $shipInfo = $this->getFreightTemplateById(14185977);
 
         //上传图片到相册
@@ -160,11 +167,7 @@ class HandleData extends BaseController
                     'price' => $goodsDetail['item']['price']
                 ]
             ]),
-            'shippingInfo' => json_encode([
-                'freightTemplateID' => $shipInfo['id'],
-                'sendGoodsAddressText' => $shipInfo['addressCodeText'],
-                'sendGoodsAddressId' => $shipInfo['fromAreaCode']
-            ])
+            'shippingInfo' => json_encode($shipInfo)
         ];
         return $data;
     }
