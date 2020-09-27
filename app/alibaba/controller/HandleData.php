@@ -63,7 +63,6 @@ class HandleData extends BaseController
             $row = json_encode($res);
             Redis::set($ids, $row, 2592000);
         }
-        dump($res);die;
         $namespace = 'com.alibaba.product';
         $apiName = 'alibaba.product.add';
         foreach ($res as $k => $v) {
