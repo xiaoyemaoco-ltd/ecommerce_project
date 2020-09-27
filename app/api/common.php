@@ -98,19 +98,6 @@ if (!function_exists('post_curls')) {
     }
 }
 
-if (!function_exists('return_value')) {
-    function return_value($status,$msg, $data = null, $code = 0){
-        $result = [
-            'status' => $status,
-            'code' => $code,
-            'msg'  => $msg,
-            'time' => time(),
-            'data' => $data,
-        ];
-        return json_encode($result);
-    }
-}
-
 //日期函数
 function date_ymd(){
     return date('Y-m-d H:i:s',time());
