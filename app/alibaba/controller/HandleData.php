@@ -174,12 +174,9 @@ class HandleData extends BaseController
         $detailImages = Redis::get($goodsId . '_product_detail_url');
         $detailImg = '';
         if (!$detailImages) {
-            $img = array_slice($goodsDetail['item']['desc_img'],0,5);
-            $i = 0;
+            $img = array_slice($goodsDetail['item']['desc_img'],0,10);
             foreach ($img as $v) {
                 $detailImg .=  '<img src="https://cbu01.alicdn.com/' . $this->imageUploadAlbum('http:' . $v, $albumID) . '" />';
-                $i++;
-                if ($i == 10) break;
             }
             Redis::set($goodsId . '_product_detail_url', '<p>' . $detailImg . '</p>', 604800);
         }
