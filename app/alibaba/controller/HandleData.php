@@ -91,6 +91,7 @@ class HandleData extends BaseController
      */
     public function getImagesResource(Request $request)
     {
+        header('HTTP/1.1 204 No Content');
         if (!$request->isPost()) return return_value('fail', '请求方式错误', 10001);
 
         $ids = $request->post('goodsids');
