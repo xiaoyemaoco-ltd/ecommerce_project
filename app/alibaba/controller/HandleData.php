@@ -111,11 +111,11 @@ class HandleData extends BaseController
             if($pid > 0){
                 pcntl_wait($status,WNOHANG);
             } else {
-                $this->imageUpload($goodsId[$i]);
+                $data = $this->imageUpload($goodsId[$i]);
+                return $data;
                 exit();
             }
         }
-        return return_value('ok', '获取图片成功', '10000');
     }
 
     /**
