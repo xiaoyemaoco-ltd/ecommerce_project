@@ -54,7 +54,6 @@ function delFile($filename){
         return '我已经被删除了哦！';
     }
 }
-
 if (!function_exists('getplatformMsg')) {
     function getplatformMsg ($plat)
     {

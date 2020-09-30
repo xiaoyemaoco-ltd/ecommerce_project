@@ -54,7 +54,6 @@ function delFile($filename){
         return '我已经被删除了哦！';
     }
 }
-
 if (!function_exists('getplatformMsg')) {
     function getplatformMsg ($plat)
     {
@@ -111,7 +110,7 @@ if (!function_exists('return_value')) {
             'time' => time(),
             'data' => $data,
         ];
-        return json_encode($result);
+        return json($result);
     }
 }
 

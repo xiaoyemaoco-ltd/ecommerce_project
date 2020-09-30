@@ -13,3 +13,7 @@ Route::get('handleGoodsAttr','handleData/handleGoodsAttr');
 Route::get('getfreighttemplate','handleData/getFreightTemplate');
 //商品发布
 Route::post('productadd','handleData/productAdd');
+// 上传图片资源
+Route::post('getimagesresource','handleData/getImagesResource');
+// 产品详情
+Route::post('getproductinfo','handleData/getProductInfo');
