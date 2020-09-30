@@ -163,6 +163,20 @@ class HandleData extends BaseController
             }
             Redis::set($goodsId . '_product_skuInfo_url', serialize($skuImages), 604800);
         }
+
+        //上传详情图片
+        $detailImages = Redis::get($goodsId . '_product_detail_url');
+        $detailImg = '';
+        if (!$detailImages) {
+            $img = array_slice($goodsDetail['desc_img'],0,5);
+            $i = 0;
+            foreach ($img as $v) {
+                $detailImg .= 'https://cbu01.alicdn.com/' . $this->imageUploadAlbum('http:' . $v, $albumID) . ';';
+                $i++;
+                if ($i == 5) break;
+            }
+            Redis::set($goodsId . '_product_detail_url', $detailImg, 604800);
+        }
         return return_value('ok', '获取图片成功', '10000');
     }
 
@@ -214,6 +228,7 @@ class HandleData extends BaseController
         $img = unserialize(Redis::get($goodsId . '_product_images_url'));
 
         $title = strlen($goodsDetail['item']['title']) > 30 ? mb_substr($goodsDetail['item']['desc'], 0, 30) : $goodsDetail['item']['title'];
+        $desc = Redis::get($goodsId . '_product_detail_url');
         $row = [
             'productType' => 'wholesale',
             'categoryID' => $cateId,
@@ -221,7 +236,7 @@ class HandleData extends BaseController
             'subject' => $title,//标题
             'language' => 'CHINESE',
             'webSite' => '1688',
-            'description' => $goodsDetail['item']['desc'],
+            'description' => $desc,
             'pictureAuth' => false,
             //商品图片
             'image' => json_encode(['images' => $img]),
