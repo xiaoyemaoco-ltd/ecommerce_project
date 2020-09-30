@@ -213,11 +213,12 @@ class HandleData extends BaseController
         //上传图片到相册
         $img = unserialize(Redis::get($goodsId . '_product_images_url'));
 
+        $title = strlen($goodsDetail['item']['title']) > 30 ? mb_substr($goodsDetail['item']['desc'], 0, 30) : $goodsDetail['item']['title'];
         $row = [
             'productType' => 'wholesale',
             'categoryID' => $cateId,
             'attributes' => json_encode($attr),
-            'subject' => $goodsDetail['item']['title'],//标题
+            'subject' => $title,//标题
             'language' => 'CHINESE',
             'webSite' => '1688',
             'description' => $goodsDetail['item']['desc'],
