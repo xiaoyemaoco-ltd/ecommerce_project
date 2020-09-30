@@ -172,7 +172,7 @@ class HandleData extends BaseController
         //上传详情图片
         $detailImages = Redis::get($goodsId . '_product_detail_url');
         $detailImg = '';
-        if ($detailImages) {
+        if (!$detailImages) {
             $img = array_slice($goodsDetail['item']['desc_img'],0,5);
             $i = 0;
             foreach ($img as $v) {
