@@ -130,7 +130,7 @@ class User extends Api{
                 $data2=['uid'=>$result['id'],'username'=>$username,'token'=>$token];
                 Session::set('userid',$data2);
                 user_log($username,$result['id'],SOF_NAME.$username.'用户登录成功!');
-                $userdata = ['token'=> $token,'username' => $username,'1ogin_status' => 1];
+                $userdata = ['token'=> $token,'username' => $username,'login_status' => 1];
                 return  $this -> success('200','登录成功',$userdata);
             }else{
                 return $this -> error('401','登录失败');
@@ -144,7 +144,7 @@ class User extends Api{
      */
     public function outlogin(Request $request) {
         $username =  $request->post('mobile');
-        Db::name('user') -> where('user_name',$username) -> update(['loginip'=>'','1ogin_status'=>0]);
+        Db::name('user') -> where('user_name',$username) -> update(['loginip'=>'','login_status'=>0]);
         Session::delete('userid');
         return $this->success('200','退出成功');
     }
