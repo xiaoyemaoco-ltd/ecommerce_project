@@ -95,9 +95,10 @@ class HandleData extends BaseController
 
         $ids = $request->post('goodsids');
         if (!$ids) return return_value('fail', '商品ID不能为空', 10003);
-        $goodsId = explode(',', $ids);
-//        $data = $this->imageUpload($ids);
-        $len = count($goodsId);
+//        $goodsId = explode(',', $ids);
+        $data = $this->imageUpload($ids);
+        return $data;
+        /*$len = count($goodsId);
         for ($i = 0; $i < $len; $i++) {
             $pid = pcntl_fork();
             if($pid == -1){
@@ -109,7 +110,7 @@ class HandleData extends BaseController
                 $this->imageUpload($goodsId[$i]);
                 exit();
             }
-        }
+        }*/
     }
 
     /**
