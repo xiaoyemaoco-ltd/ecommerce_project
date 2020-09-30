@@ -97,25 +97,26 @@ class HandleData extends BaseController
         $ids = $request->post('goodsids');
         if (!$ids) return return_value('fail', '商品ID不能为空', 10003);
         $goodsId = explode(',', $ids);
-//        foreach ($goodsId as $id) {
-//            $this->imageUpload($id);
-//        }
+        foreach ($goodsId as $id) {
+            $this->imageUpload($id);
+        }
 //        $data = $this->imageUpload($ids);
 //        return $data;
-        $len = count($goodsId);
-        for ($i = 0; $i < $len; $i++) {
-            $pid = pcntl_fork();
-            if($pid == -1){
-                exit('create process failed');
-            }
-            if($pid > 0){
-                pcntl_wait($status,WNOHANG);
-            } else {
-                $data = $this->imageUpload($goodsId[$i]);
-                return $data;
-                exit();
-            }
-        }
+//        $len = count($goodsId);
+//        for ($i = 0; $i < $len; $i++) {
+//            $pid = pcntl_fork();
+//            if($pid == -1){
+//                exit('create process failed');
+//            }
+//            if($pid > 0){
+//                pcntl_wait($status,WNOHANG);
+//            } else {
+//                $data = $this->imageUpload($goodsId[$i]);
+//                return $data;
+//                exit();
+//            }
+//        }
+        return return_value('ok', '获取图片成功', '10000');
     }
 
     /**
