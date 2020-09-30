@@ -112,6 +112,7 @@ class HandleData extends BaseController
                 exit();
             }
         }
+        return return_value('ok', '获取图片成功', '10000');
     }
 
     /**
