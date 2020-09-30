@@ -97,12 +97,12 @@ class HandleData extends BaseController
         $ids = $request->post('goodsids');
         if (!$ids) return return_value('fail', '商品ID不能为空', 10003);
         $goodsId = explode(',', $ids);
-        foreach ($goodsId as $id) {
-            $this->imageUpload($id);
-        }
+//        foreach ($goodsId as $id) {
+//            $this->imageUpload($id);
+//        }
 //        $data = $this->imageUpload($ids);
 //        return $data;
-        /*$len = count($goodsId);
+        $len = count($goodsId);
         for ($i = 0; $i < $len; $i++) {
             $pid = pcntl_fork();
             if($pid == -1){
@@ -114,7 +114,7 @@ class HandleData extends BaseController
                 $this->imageUpload($goodsId[$i]);
                 exit();
             }
-        }*/
+        }
         return return_value('ok', '获取图片成功', '10000');
     }
 
