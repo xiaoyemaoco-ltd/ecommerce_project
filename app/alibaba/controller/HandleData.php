@@ -167,15 +167,15 @@ class HandleData extends BaseController
         //上传详情图片
         $detailImages = Redis::get($goodsId . '_product_detail_url');
         $detailImg = '';
-        if (!$detailImages) {
+        if ($detailImages) {
             $img = array_slice($goodsDetail['item']['desc_img'],0,5);
             $i = 0;
             foreach ($img as $v) {
-                $detailImg .= 'https://cbu01.alicdn.com/' . $this->imageUploadAlbum('http:' . $v, $albumID) . ';';
+                $detailImg .=  '<img src="https://cbu01.alicdn.com/' . $this->imageUploadAlbum('http:' . $v, $albumID) . '" />';
                 $i++;
                 if ($i == 5) break;
             }
-            Redis::set($goodsId . '_product_detail_url', $detailImg, 604800);
+            Redis::set($goodsId . '_product_detail_url', '<p>' . $detailImg . '</p>', 604800);
         }
         return return_value('ok', '获取图片成功', '10000');
     }
