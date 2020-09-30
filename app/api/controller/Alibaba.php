@@ -33,14 +33,15 @@ class Alibaba
             'need_refresh_token' => false,
             'client_id' => $this->client_id,
             'client_secret' => $this->client_secret,
-            'redirect_uri' => 'http://www.sxtyyd.com/api/alibaba/back',
-//            'redirect_uri' => 'https://test.tianyuyide5qqcom.yxnat.softdev.top/api/alibaba/back',
+//            'redirect_uri' => 'http://www.sxtyyd.com/api/alibaba/back',
+            'redirect_uri' => 'http://192.168.159.128/api/alibaba/back',
             'code' => $code
         ];
         $url = 'https://gw.open.1688.com/openapi/http/1/system.oauth2/getToken/' . $this->client_id;
         $data = post_curls($url, $param);
         $data = json_decode($data, 1);
         Redis::set('alibaba_access_token', $data['access_token'], 36000);
-        dump($data);
+//        dump($data);
+        return redirect('/index/swoftl');
     }
 }
