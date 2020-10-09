@@ -6,6 +6,7 @@
  * Time: 19:49
  */
 namespace app\index\controller;
+use app\Request;
 use think\facade\Db;
 use think\facade\View;
 
@@ -39,5 +40,10 @@ class Index extends Home{
     public function wuJing()
     {
         return $this->fetch();
+    }
+
+    public function test(Request $request)
+    {
+        dump($request->domain());die;
     }
 }
