@@ -1,10 +1,10 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Administrator
- * Date: 2020/8/22
- * Time: 12:48
- */
+//    / **
+//    *由PhpStorm创建。
+//    *用户：管理员
+//    *日期：2020/8/22
+//    *时间：12:48
+//    * /
 namespace app\api\controller;
 use DsfApi\PddApi;
 use think\facade\Db;
@@ -12,6 +12,7 @@ use app\Request;
 //use think\Request;
 use think\facade\Session;
 use think\facade\Cache;
+use fast\Image;
 class Pnduoduo extends Api {
 //    protected static $client_id = "919269592dd24bf8959bd07f4e0a569b";// 你的client_id
 //    protected static $client_secret = "9d92e889253e0636da0be1de6e15761505c73428"; // 你的client_secret
@@ -30,8 +31,6 @@ class Pnduoduo extends Api {
 //    protected static $loginurl = 'http://open-api.pinduoduo.com/oauth/token';
 //    protected static $apiurl = "https://gw-api.pinduoduo.com/api/router";
 //    protected static $redirect_uri ="http://39.96.83.39:777/api/pnduoduo/login";//回调地址
-
-
 
     protected  $accessToken;
     protected  $pddarray;
@@ -82,84 +81,155 @@ class Pnduoduo extends Api {
     //商品添加或发布
     public function pddgoodsadd(Request $request){
         $cost_template_id = $request->post('template_id');
+        $goods_type = $request->post('goods_type') ?? 1; //1-国内普通商品，2-进口
+        $ids = $request->post('goodsids');
+        $process = $request->post('process') ?? 1;//进程数
+        $unit_price = $request->post('unit_price') ?? 0;//单价
+        $spell_unit_price = $request->post('spell_unit_price') ?? 0;//拼单价
         if(empty($cost_template_id)){
             return $this -> error('401','运费模板不能为空!');
         }
-        $goods_type = $request->post('goods_type') ?? 1; //1-国内普通商品，2-进口
-        $strnumids = $request->post('goodsids');
-        if(empty($strnumids)){
+        if(empty($ids)){
             return $this -> error('401','商品ID不能为空!');
         }
-        $goodsid = explode(',', $strnumids);
-        $a = array_shift($goodsid);
-        $res = Cache::get("$strnumids");
-        if(empty($res)){
-            return $this -> error('401','请先获取商品详情！');
+
+        $res = [];
+
+        if (Redis::get($ids)) {
+            $res = json_decode(Redis::get($ids), 1);
+        } else {
+            $goodsId = explode(',', $ids);
+            $id = array_shift($goodsId);
+            do{
+                $res[] = $this->getDoodsDetail($id);
+            }while($a = array_shift($goodsid));
+            $row = json_encode($res);
+            Redis::set($ids, $row, 2592000);
         }
-        do{
-            $info = unserialize($res[$a]);
-            $this -> addsave($cost_template_id,$goods_type,$info);
-        }while($a = array_shift($goodsid));
+//        $namespace = 'com.alibaba.product';
+//        $apiName = 'alibaba.product.add';
+//        foreach ($res as $k => $v) {
+//            $v['access_token'] = $this->access_token;
+//            $this->getAPiData($v, $namespace, $apiName);
+//        }
+//        $goodsid = explode(',', $ids);
+//        $a = array_shift($goodsid);
+//        $res = Cache::get("$ids");
+//        if(empty($res)){
+//            return $this -> error('401','请先获取商品详情！');
+//        }
+//        do{
+//            $info = unserialize($res[$a]);
+//            $this -> addsave($cost_template_id,$goods_type,$info);
+//        }while($a = array_shift($goodsid));
         return $this -> success(200,'');
     }
+    //获取商品详情
+    protected function getDoodsDetail($goodsId){
+
+    }
+
 
     protected function addsave($cost_template_id,$goods_type,$info){
-        // 叶子类目ID
-        $pdd_catid = $this -> getcat_id($info['root_cat_name'],$info['cat_name']);
-//        $sku_list = $this -> skus_list($pdd_catid,$info['skus_list'],$info['prop_imgs']);
-//        exit;
-//        $imgpathstr='["http:\/\/t00img.yangkeduo.com\/openapi\/images\/2020-07-31\/7faa40c3c82e3d8f743f136aeaf5738c.jpeg","http:\/\/t00img.yangkeduo.com\/openapi\/images\/2020-07-31\/6cfb30a128bebe1b72c70929340eb252.jpeg","http:\/\/t00img.yangkeduo.com\/openapi\/images\/2020-07-31\/dba4c08d1284bba71c4a89c99a17f77d.jpeg","http:\/\/t00img.yangkeduo.com\/openapi\/images\/2020-07-31\/13407c472970f0b480a6f008b36e9fe8.jpeg","http:\/\/t00img.yangkeduo.com\/openapi\/images\/2020-07-31\/49ca2406e14732facf458b9035b1d0f4.jpeg"]';
-//        $lunbo = [];
-//        foreach ($info['item_imgs'] as $key => $val){
-//            $lunbo[] = $val['url'];
-//        }
-//        $pddlunbo = '';//轮播图
-//        $pddlunbo .= $this -> imgupload($info['pic_url'],1,750,352);
-//        foreach ($lunbo as $v){
-//            $pddlunbo .= $this -> imgupload($v).',';
-//        }
-        $carousel_gallery = $this-> pddUploadImg($info['item_imgs']);
-//        $carousel_gallery = substr($pddlunbo,0,strlen($pddlunbo)-1);
-        $desc_img = ''; //详情图
-        foreach ($info['desc_img'] as $v){
-            $desc_img .= $this -> imgupload($v).',';
+//        $start = time();
+        $catid = $this -> getcat_id($info['root_cat_name'],$info['cat_name']);
+
+        $pddlunbo = [];//轮播图
+        foreach ($info['item_imgs'] as $v){
+            $pddlunbo[] = $this -> imgupload($v,1,700,700);;
         }
-        $detail_gallery = substr($desc_img,0,strlen($desc_img)-1);
+        $carousel_gallery = json_encode($pddlunbo);
+        $desc_img = []; //详情图
+        foreach ($info['desc_img'] as $v){
+            $desc_img[] = $this -> imgupload($v,1,700,700);
+        }
+        $detail_gallery = json_encode($desc_img);
+//        $detail_gallery = json_encode($this -> imgupload1($info['desc_img']));
+//        $carousel_gallery = json_encode($this -> imgupload1($info['item_imgs']));
+//        epre($carousel_gallery);
+//        $end = time();
+//        $counttime = $end - $start;
+//        echo "catid获取总耗时".$counttime;die;
+
+
         //商品sku列表
-        $sku_list = $this -> skus_list($pdd_catid,$info['skus_list'],$info['prop_imgs']);
+        $sku_list = json_encode($this -> skus_list($catid,$info['skus_list'],$info['prop_imgs']));
         //商品属性
-        $goods_properties = json_encode([$this -> getAttrcats($pdd_catid,$info['props'],$info['pic_url'])]);
+        $goods_properties = json_encode($this -> getAttrcats($catid,$info['props'],$info['pic_url']));
         $title = $info['title'];
+        $desc_short = $info['desc_short'];//商品简介
         $market_price = $info['orginal_price'] * 100 * 2;
 //        //商品外部编码
-        $out_goods_id = "WPK-T-".$info['num_iid'];
-        $pic_url = $this -> imgupload($info['pic_url'],1,750,352); ;
-        $this -> pddgoodsave($pdd_catid,$cost_template_id,$carousel_gallery,$detail_gallery,$title,$goods_properties,$market_price,$sku_list,$goods_type,$out_goods_id,$pic_url);
+        $out_goods_id = "WPK-T-".$info['goodsid'];
+        $pic_url = $this -> imgupload($info['pic_url'],1,750,352);
+        $carousel_video = json_encode([]);
+        $this -> pddgoodsave($catid,$carousel_video,$cost_template_id,$carousel_gallery,$detail_gallery,$title,$goods_properties,$market_price,
+            $sku_list,$goods_type,$out_goods_id,$pic_url,$desc_short);
     }
 
-    //上传轮播图片
-    /*
-     * $image 图片数组
-     * */
-    public  function pddUploadImg($image){
-        if(count($image)  == 0){
+    public function imgupload1($images,$type="",$iwidth="",$iheight=""){
+        if(empty($images)){
             return false;
         }
-        $img_arr = [];
-        foreach ($image as $k => $v){
-            $imageurl = imgtobase64("http:".$v['url'],1,600,550);
-            $result  = $this -> pddarray->request('pdd.goods.image.upload',[ 'access_token' =>$this -> accessToken,'image'=>$imageurl]);
-            $img_arr[$k] = $result['goods_image_upload_response']['image_url'];
+        //设置缓冲为0(也可以去php.ini设置)
+        ini_set('output_buffering', 0);
+        //打开输出缓冲区
+        ob_start();
+        //设置一个空数组
+        $curl_Arr=[];
+        //这里模拟20次请求
+        for($i=0;$i<count($images);$i++){
+            //开启curl连接
+            $imageurl = Image::imgtobase64("http:".$images,$type,$iwidth,$iheight);
+            $curl_Arr[$i]  = $this -> pddarray->request('pdd.goods.image.upload',[ 'access_token' =>$this -> accessToken,'image'=>$imageurl]);
+//            $curl_Arr[$i] = $result['goods_image_upload_response']['image_url'];
+//            $curl_Arr[$i]=curl_init("http://XXXX/test.php");
+            //CURLOPT_RETURNTRANSFER 设置为1表示稍后执行的curl_exec函数的返回是URL的返回字符串，而不是把返回字符串定向到标准输出并返回TRUE；
+            curl_setopt($curl_Arr[$i],CURLOPT_RETURNTRANSFER,1);
+
         }
-        return $img_arr;
+        epre($curl_Arr);
+        //创建批处理cURL句柄
+        $mh = curl_multi_init();
+
+        foreach($curl_Arr as $k => $ch){
+            //curl句柄入栈增加
+            curl_multi_add_handle($mh,$ch);
+        }
+        $active = null;
+        while(count($curl_Arr)>0){
+            //发起curl_multi请求
+            @curl_multi_exec($mh,$active);
+            foreach($curl_Arr as $k => $ch){
+                //获取句柄的返回值
+                if($result[$k]= curl_multi_getcontent($ch)){
+                    //输出结果
+                    echo "$result[$k]\n";
+                    ob_flush();
+                    //把被释放的数据发送到浏览器
+                    flush();
+                    //关闭该句柄
+                    curl_multi_remove_handle($mh,$ch);
+                    unset($curl_Arr[$k]);
+                }
+            }
+        }
+       //关闭ouput_buffering机制
+        ob_end_flush();
+        //关闭"curl_mulit"句柄
+        curl_multi_close($mh);
+        echo 1111111;die;
+epre($curl_Arr);die;
     }
 
-    /*上传图片*/
+    /*上传图片
+    * $type 类型 1压缩尺寸 0 不压缩
+    */
     public function imgupload($images,$type="",$iwidth="",$iheight=""){
         if(empty($images)){
             return false;
         }
-        $imageurl = imgtobase64("http:".$images,$type,$iwidth,$iheight);
+        $imageurl = Image::imgtobase64("http:".$images,$type,$iwidth,$iheight);
         $result  = $this -> pddarray->request('pdd.goods.image.upload',[ 'access_token' =>$this -> accessToken,'image'=>$imageurl]);
         $imgurl = $result['goods_image_upload_response']['image_url'];
         return  $imgurl;
@@ -248,7 +318,6 @@ class Pnduoduo extends Api {
                 $specid = $item['parent_spec_id'] ;
             }
         }
-
         $spec_ids =  $this -> getpddskuSpecsId($specid,$specname);
         return $spec_ids;
     }
@@ -263,37 +332,43 @@ class Pnduoduo extends Api {
     }
 
     /* 添加商品数据
-     * $pdd_catid 类目id
-     * $cost_template_id 模板id
-     * $pddlunbo 轮播图
+     * $catid 类目id
+     * $carousel_video //视频
+     * $template_id 模板id
+     * $carousel_gallery 轮播图
+     * $detail_gallery 详情图
      * $title  商品标题
      * $goods_properties  商品属性列表
      * $market_price 市场价格
      * $sku_list
+     * $goods_type 1-国内普通商品，2-进口
+     * $out_goods_id 商品编码
+     * $pic_url 商品主图
      * */
-    protected function pddgoodsave($pdd_catid,$cost_template_id,$carousel_gallery,$detail_gallery,$title,$goods_properties,$market_price,$sku_list,$goods_type,$out_goods_id,$pic_url){
+    protected function pddgoodsave($catid,$carousel_video,$template_id,$carousel_gallery,$detail_gallery,$title,$goods_properties,$market_price,
+                                   $sku_list,$goods_type,$out_goods_id,$pic_url,$desc_short){
         $pdd_data = [
             'access_token' => $this -> accessToken,
             'bad_fruit_claim'=>'',
             'buy_limit'=>'',//限购次数   非必填
-            'carousel_video' => json_encode([]),
+            'carousel_video' => $carousel_video,
             'carousel_video_url'=>'',
-            'cat_id'=> $pdd_catid, //叶子类目ID
-            'cost_template_id' => $cost_template_id, //物流运费模板ID，可使用pdd.logistics.template.get获取
+            'cat_id'=> $catid, //叶子类目ID
+            'cost_template_id' => $template_id, //物流运费模板ID，可使用pdd.logistics.template.get获取
             'country_id' => 0,//国家ID，country_id可以通过pdd.goods.country.get获取
             'customer_num' => '',//团购人数    非必填
             'customs' => '',//非必填
             'delivery_one_day' => 0,//	是否当日发货,0 否，1 是  非必填
-            'carousel_gallery'=> json_encode($carousel_gallery), //商品轮播图   %5Bstr%5D
-            'detail_gallery'=> json_encode([$detail_gallery]),//商品详情图   %5Bstr%5D
-            'elec_goods_attributes'=>'',//urlencode(json_encode(['begin_time'=>'','days_time'=>'','end_time'=>'','time_type'=>''])),
-            'goods_name'=>$title,//	商品标题
-            'goods_desc' => '',//商品描述
+            'carousel_gallery'=> $carousel_gallery, //商品轮播图
+            'detail_gallery'=> $detail_gallery,//商品详情图
+            'elec_goods_attributes'=>'',
+            'goods_name'=> $title,//	商品标题
+            'goods_desc' => $desc_short,//商品描述
             'goods_properties'=>$goods_properties,//	商品属性列表  非必填
             'goods_trade_attr' => '',//日历商品交易相关信息   非必填
             'goods_travel_attr'=> '',//商品出行信息  非必填
             'goods_type' => $goods_type,//1-国内普通商品，2-进口
-            'image_url'=> $pic_url,//$this -> imgupload($pic_url,1,750,352),//	商品主图  非必填
+            'image_url'=> $pic_url,//	商品主图
             'invoice_status' => 0,//是否支持开票（测试中）
             'is_customs' => 'false',//是否需要上报海关，false-无需上报海关，true-需上报海关  非必填
             'is_folt' => 'true',//是否支持假一赔十，false-不支持，true-支持
@@ -305,7 +380,7 @@ class Pnduoduo extends Api {
             'market_price' => $market_price,//市场价格，单位为分
             'order_limit' => 999999,//单次限量   非必填
             'origin_country_id' => '',//原产地id  非必填
-            'out_goods_id' => $out_goods_id,//商品goods外部编码 商品编码  非必填
+            'out_goods_id' => $out_goods_id,//商品编码
             'oversea_goods'=>'', //非必填
             'oversea_type' => 0,//非必填
             'pre_sale_time' => 0,//预售时间，is_pre_sale为true时必传   非必填
@@ -313,7 +388,7 @@ class Pnduoduo extends Api {
             'shang_men_an_zhuang' => '',//上门安装模版id  非必填
             'shipment_limit_second' => 48*3600,
             'size_spec_id' => '',//尺码表id  非必填
-            'sku_list' => json_encode($sku_list),
+            'sku_list' => $sku_list,
             'sku_type' => 0,//	库存方式（0：普通型，1：日历型）
             'song_huo_an_zhuang' => '',//送货入户并安装模版id  非必填
             'song_huo_ru_hu' => '',//送货入户模版id  非必填
@@ -408,7 +483,7 @@ class Pnduoduo extends Api {
                 }
             }
         }
-
+        $arr = array_merge($arr);
         $goods_properties = [];
         foreach ($arr as $key => $val){
             $goods_properties[$key]['group_id'] = '';//组id
