@@ -33,7 +33,8 @@ class Alibaba
             'need_refresh_token' => false,
             'client_id' => $this->client_id,
             'client_secret' => $this->client_secret,
-            'redirect_uri' => 'http://www.sxtyyd.com/api/alibaba/back',
+            'redirect_uri' => $this->redirect_uri,
+//            'redirect_uri' => 'http://www.sxtyyd.com/api/alibaba/back',
 //            'redirect_uri' => 'http://192.168.159.128/api/alibaba/back',
             'code' => $code
         ];
@@ -42,6 +43,6 @@ class Alibaba
         $data = json_decode($data, 1);
         Redis::set('alibaba_access_token', $data['access_token'], 36000);
 //        dump($data);
-        return redirect('/index/swoftl');
+        return redirect($request->domain() . '/index/swoftl');
     }
 }

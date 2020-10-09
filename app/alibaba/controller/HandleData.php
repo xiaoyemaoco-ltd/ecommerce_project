@@ -281,7 +281,7 @@ class HandleData extends BaseController
         ];
         return $row;
     }
-    public function test()
+    public function test(Request $request)
     {
 //        ini_set('max_execution_time', 0);
         /*dump(Redis::get('alibaba_access_token'));die;*/
@@ -293,8 +293,8 @@ class HandleData extends BaseController
 //        $data = $this->createAlbum();
 //        $data = $this->getAlbumId();
 //        $data = $this->imageUpload(575748400801);
-        $data = $this->getCategoryByKeyword('浴巾');
-        dump($data);die;
+//        $data = $this->getCategoryByKeyword('浴巾');
+        dump($request->domain());die;
     }
 
     public function getSku()
