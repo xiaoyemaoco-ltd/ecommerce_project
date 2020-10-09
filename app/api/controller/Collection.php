@@ -13,6 +13,7 @@ use think\facade\Cache;
 use fast\Redis;
 //use think\Download;
 class Collection extends Api{
+    protected $noNeedLogin = ['filter'];
     protected $noNeedToken = ['collection_download'];
     protected $pathfile = null;//保存的物理路径
     protected $path = null;//根路径
@@ -128,19 +129,29 @@ class Collection extends Api{
         }
         return $arraydata;
     }
-
-
-    //一键
-    public function good_details(Request $request){
-        $goodsid = $request->post('goodsids');
-//        if(empty)
-        $res = $this -> istaobaogoods($goodsid);
-//        epre($this -> istaobaogoods($goodsid));
-        return $this->success('2','获取详情成功',$res['good_detile']);
+    /*
+     * 过滤商品
+     * $filtertype  过滤组 0 人工过滤
+     *
+     *
+     *
+    */
+    public function filter(Request $request){
+        $filtertype = $request -> get('filtertype');
+        $goodsid = $request-> get('goodsids');
+        switch ($filtertype){
+            case 1:
+                if(Cache::get("$goodsid")){}
+                $res = $this -> gooddelties($goodsid);
+                $row = serialize($res);
+                Cache::set("$goodsid",$row);
+                dump($res);
+                break;
+        }
     }
 
 
-    //获取单个商品详情
+    //获取商品详情
     public function one_details(Request $request){
         $strnumids = $request->post('goodsids');
         if (empty($strnumids)) {

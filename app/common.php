@@ -84,6 +84,9 @@ function is_mobile(){
     // preg_match()方法功能为匹配字符，既第二个参数所含字符是否包含第一个参数所含字符，包含则返回1既true
     return preg_match($regex_match, strtolower($_SERVER['HTTP_USER_AGENT']));
 }
+
+
+
 function epre($data){
     echo '<pre>';
     print_r($data);

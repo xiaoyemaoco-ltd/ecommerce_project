@@ -26,6 +26,7 @@ Route::group('api',function (){
     Route::any('collection/collection_download','api/collection/collection_download');//自动保存
 
     Route::any('collection/one_details','api/collection/one_details');//采集单个商品信息
+    Route::any('collection/filter','api/collection/filter'); // 拼多多店铺授权
 
     Route::any('collection/good_details','api/collection/good_details');//采集单个商品信息
     /****************   采集商品或信息   ************/
@@ -42,6 +43,9 @@ Route::group('api',function (){
 
     Route::post('pnduoduo/getTemplates','api/pnduoduo/getTemplates'); // 获取拼多多运费模板
     Route::post('pnduoduo/pddgoodsadd','api/pnduoduo/pddgoodsadd'); // 定义POST请求路由规则
+
+    Route::any('test/pddadd','api/test/pddadd'); // 获取拼多多店铺
+
 
 //    Route::get('api/getcode','api/auth.PddController/login'); // 定义POST请求路由规则
 });
