@@ -43,6 +43,6 @@ class Alibaba
         $data = json_decode($data, 1);
         Redis::set('alibaba_access_token', $data['access_token'], 36000);
 //        dump($data);
-        return redirect($request->domain() . '/index/swoftl');
+        return redirect('/index/swoftl');
     }
 }
