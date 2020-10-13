@@ -27,13 +27,15 @@ class Download extends BaseController{
 
 
     //扫码下载聊天软件
-    //http://chat.zp600.com/api/api/download
-    public function download()
-    {
-        $app_version = $this->smsyem_version();
+    //扫码下载聊天软件
+    //http://www.sxtyyd.com/api/download/download
+    //chat.zp600.com/api/api/download
+    public function download(){
+        // $app_version = $this->smsyem_version();
         //查询当前的文件路径
-        $details = Db::name('version_upgrade')->where('app_version', $app_version)->find();
-        $file_path = __PUBLIC__ . $details['path'];
+        // $details = Db::name('version_upgrade')->where('app_version', $app_version)->find();
+        $file_path = SHUJUCUNCHU.'/software/wujing.exe';
+
         // $file_path = __PUBLIC__ .'/uploads/H5F9DCF7B.apk';
         if (file_exists($file_path)) {
             header('Content-Description: File Transfer');
