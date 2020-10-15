@@ -1,249 +1,337 @@
 <?php
 /**
  * Created by PhpStorm.
- * User: LENOVO
- * Date: 2020/9/7
- * Time: 21:00
+ * User: Administrator
+ * Date: 2020/9/4
+ * Time: 19:14
  */
 namespace fast;
 use think\facade\Config;
-/**
-  *  基本图片处理，用于完成图片缩入，水印添加
-  *  当水印图超过目标图片尺寸时，水印图能自动适应目标图片而缩小
-  *  水印图可以设置跟背景的合并度
-  *  Copyright(c) 2005 by ustb99. All rights reserved
-  *  To contact the author write to {@link mailto:ustb80@163.com}
-  * @author 偶然
-  * @version $Id: thumb.class.php,v 1.9 2006/09/30 09:31:56 zengjian Exp $
-  * @package system
- * $t->setSrcImg("img/test.jpg");
- */
-
 class Image{
-    //图片后缀对应的处理函数：GD库
-    private static $ext = array(
-        'jpg' => 'jpeg',
-        'jpeg' => 'jpeg',
-        'png' => 'png',
-        'gif' => 'gif'
-    );
-    //记录错误信息
-    public static $error;
-
-    /**
-     * @desc 检测文件有效性
-     * @param $file,文件名
-     * @return bool
-     */
-    public static function checkFile(&$file){
-        //字符串处理
-        $file = trim($file);
-        //判定资源有效性
-        if (!is_file($file)) {
-            self::$error = "图片{$file}不存在！";
-            return false;
-        }
-        //获取文件信息：判定是否可以处理文件
-        $file_info = pathinfo($file);
-        if (!array_key_exists($file_info['extension'], self::$ext)) {
-            self::$error = "系统无法处理图片{$file}的类型！";
-            return false;
-        }
-        return true;
+    private $path;
+   //构造方法用来对图片所在位置进行初始化
+    public function __construct($path="./"){
+        $this->path=rtrim($path,"/")."/";    //用户在输入路径时，无斜杠则加斜杠，有斜杠则删掉再加上
     }
-    /**
-     * @desc 检测路径有效性
-     * @param $path,文件名
-     * @return bool
+    /** 把网络图片图片转成base64
+     * @param string $img 图片地址
+     * @return string
+     * $type = 1 需要压缩
      */
-    public static function checkPath(&$path){
-        //字符串处理
-        $path = rtrim(trim($path), '/'). '/';
-        if (!is_dir($path)) {
-            self::$error = "{$path}存储路径不存在！";
-            return false;
+    public static function imgtobase64($img='',$type=0,$iwidth="",$iheight=""){
+        if($type == 1){
+            $img = self::resize_image($img,$iwidth,$iheight);
         }
-        return true;
+        $imageInfo = self::getfilesuffix($img);
+//    $base64 = "" . chunk_split(base64_encode(file_get_contents($img)));
+        $img = 'data:' . 'image/'.$imageInfo . ';base64,' . chunk_split(base64_encode(file_get_contents($img)));
+        return $img;
     }
+
     /**
-     * @desc 制作缩略图
-     * @param array $info,关联数组参数,应该包含以下元素：
-     * string file => 缩略图存储路径
-     * string path => 缩略图存储路径
-     * int width => 缩略图宽
-     * int height => 缩略图高
-     * @return bool|string,返回缩略图文件名，错误返回false
+     * 按照指定的尺寸压缩图片
+     * @param $source_path  原图路径
+     * @param $dest  保存路径
+     * @param $imgWidth     目标宽度
+     * @param $imgHeight    目标高度
+     * @return bool|string
      */
-    public static function thumb($info){
-        $file = $info['file'];
-        $path = $info['path'];
+   protected static function resize_image($source_path,$imgWidth,$imgHeight){
+        $dest = './storage/urlimage/';
+        $source_info = getimagesize($source_path);
+        $source_mime = $source_info['mime'];
+        switch ($source_mime) {
+            case 'image/gif':
+                $source_image = imagecreatefromgif($source_path);
+                break;
 
-        if(!self::checkFile($file)) return false;
-        if(!self::checkPath($path)) return false;
-        $file_info = pathinfo($file);
-        $file_ext = $file_info['extension'];    //文件扩展名
-        $img_info = getimagesize($file);
+            case 'image/jpeg':
+                $source_image = imagecreatefromjpeg($source_path);
+                break;
 
-        //根据文件扩展名确定原图资源函数：打开函数和保存函数
-        $open = 'imagecreatefrom' . self::$ext[$file_ext];
-        $save = 'image' . self::$ext[$file_ext];
-        //打开图片资源
-        $src = $open($file);
+            case 'image/png':
+                $source_image = imagecreatefrompng($source_path);
+                break;
 
-        if(isset($info['width']) && isset($info['height'])){
-            //固定宽高，背景补白
-            $width = $info['width'];
-            $height = $info['height'];
-            //补白计算：计算宽高比
-            $src_b = $img_info[0] / $img_info[1];
-            $thumb_b = $width / $height;
-            //原图宽高比大于缩略图：原图太宽，缩略图的宽度要占满
-            if ($src_b > $thumb_b) {
-                //缩略图实际宽高
-                $w = $width;
-                $h = ceil($width / $src_b);
-                //缩略图起始位置
-                $x = 0;
-                $y = ceil(($height - $h) / 2);
-            } else {
-                //原图宽高比小于缩略图：原图太高，缩略图的高度要占满
-                $w = ceil($src_b * $width);
-                $h = $height;
-                $x = ceil(($width - $w) / 2);
-                $y = 0;
+            default:
+                return false;
+                break;
+        }
+        $target_image    = imagecreatetruecolor($imgWidth, $imgHeight); //创建一个彩色的底图
+        imagecopyresampled($target_image, $source_image, 0, 0, 0, 0, $imgWidth, $imgHeight, $source_info[0], $source_info[1]);
+        $fileName = $dest.date("YmdHis").uniqid().'.jpg';
+        if(!imagejpeg($target_image,'./'.$fileName)){
+            $fileName = '';
+        }
+        imagedestroy($target_image);
+        return $fileName;
+    }
+
+    /*
+        @desc：获取文件真实后缀
+        @param   name    文件名
+        @return  suffix  文件后缀
+    */
+    private static function  getfilesuffix($name) {
+        $file = fopen($name, "rb");
+        $bin = fread($file, 2); // 只读2字节
+        fclose($file);
+        $info = @unpack("C2chars", $bin);
+        $code = intval($info['chars1'] . $info['chars2']);
+        $suffix = "unknow";
+        if($code == 255216){
+            $suffix = "jpg";
+        }elseif($code == 7173){
+            $suffix = "gif";
+        }elseif($code == 13780){
+            $suffix = "png";
+        }elseif($code == 6677){
+            $suffix = "bmp";
+        }elseif($code == 7798){
+            $suffix = "exe";
+        }elseif($code == 7784){
+            $suffix = "midi";
+        }elseif($code == 8297){
+            $suffix = "rar";
+        }elseif($code == 7368){
+            $suffix = "mp3";
+        }elseif($code == 0){
+            $suffix = "mp4";
+        }elseif($code == 8273){
+            $suffix = "wav";
+        }
+         return $suffix;
+    }
+
+    //本地图片转换成base64编码
+   public static function base64EncodeImage ($image_file) {
+        $base64_image = '';
+        $image_info = getimagesize($image_file);
+        $image_data = fread(fopen($image_file, 'r'), filesize($image_file));
+        $base64_image = 'data:' . $image_info['mime'] . ';base64,' . chunk_split(base64_encode($image_data));
+        return $base64_image;
+    }
+
+
+    public function imageAddText($path, $content, $x = 'auto', $y = 'auto', $fontSize = 38, $font = './t.ttf'){
+        $temp = array(1=>'gif', 2=>'jpeg', 3=>'png');
+        // 获取图片信息
+        $imageInfo = getimagesize($path);
+        $imageType = $temp[$imageInfo[2]];
+
+        $getfunc = "imagecreatefrom$imageType";
+        $outfunc = "image$imageType";
+
+        $resource = $getfunc($path);
+
+        $width    = imagesx($resource);
+        $height   = imagesy($resource);
+
+        $color = imagecolorallocatealpha($resource, 255, 255, 255, 0);
+
+        $fontBox = imagettfbbox($fontSize, 0, $font, $content);//文字水平居中实质
+
+        if ($x === 'auto'){
+            $x = ceil(($width - $fontBox[2]) / 2);
+        }
+        if ($y === 'auto'){
+            $y = ceil(($height - $fontBox[1] - $fontBox[7]) / 2);
+        }
+
+        imagettftext($resource, $fontSize, 0, $x, $y, $color, $font, $content);
+
+        /*输出图片*/
+        //浏览器输出
+        header("Content-type:".$imageType);
+        $outfunc($resource);
+        // 自动居中
+        // imageAddText('./test.jpg', 'My name is Siam，中文名是宣言');
+        // 声明x y值
+        // imageAddText('./test.jpg', 'My name is Siam，中文名是宣言',200);
+        // imageAddText('./test.jpg', 'My name is Siam，中文名是宣言','auto', '300');
+    }
+
+
+
+
+    /*   功能：对图片进行缩放
+        *    参数$name：需处理的图片名称
+        *    参数$width：缩放后的宽度
+        *    参数$height：缩放后的高度
+        *    参数$qz：新图片的名称前缀
+        *    返回值：缩放后的图片名称，失败返回false
+        */
+    public function thumb($name,$width,$height,$qz="th_"){
+                //获取图片信息
+             $imgInfo=$this->getInfo($name);    //原图片的信息
+            //获取图片资源,通用各种类型的图片(png,jpg,gif)
+             $srcImg=$this->getImg($name,$imgInfo);
+              //获取计算图片等比例之后的大小
+             $size=$this->getNewSize($name,$width,$height,$imgInfo);
+              //获取新的图片资源,处理gif透明背景问题
+             $newImg=$this->kid0fImage($srcImg,$size,$imgInfo);
+              //另存为一个新的图片，返回新的缩放后的图片名称
+             return $this->createNewImage($newImg,$qz.$name,$imgInfo);
+    }
+    private function createNewImage($newImg,$newName,$imgInfo){
+        //另存图片
+        switch($imgInfo["type"]){
+            case 1:                //gif
+                     $result=imagegif($newImg,$this->path.$newName);
+                break;
+            case 2:                //jpg
+                     $result=imagejpeg($newImg,$this->path.$newName);
+                  break;
+            case 3:                //png
+                     $result=imagepng($newImg,$this->path.$newName);
+                break;
+        }
+        imagedestroy($newImg);
+        return $newName;
+    }
+    private function kid0fImage($srcImg,$size,$imgInfo){
+        //创建新图片资源
+        $newImg=imagecreatetruecolor($size["width"],$size["height"]);
+        //取出透明色指数
+        $otsc=imagecolortransparent($srcImg);
+         //判断是否有透明色    //（）取得一幅图像的调色板中颜色的数目
+        if($otsc >=0 && $otsc <= imagecolorstotal($srcImg)){
+            $tran = imagecolorsforindex($srcImg,$otsc);    //取得某索引的颜色
+            $newt = imagecolorallocate($newImg,$tran["red"],$tran["green"],$tran["blue"]);    //为一幅图片分配颜色
+            imagefill($newImg,0,0,$newt);    //填充颜色
+            imagecolortransparent($newImg,$newt);    //将某个颜色定义为透明色
+        }
+      //拷贝部分图像并调整大小
+       imagecopyresized($newImg, $srcImg, 0, 0, 0, 0, $size["width"], $size["height"], $imgInfo["width"], $imgInfo["height"]);
+       imagedestroy($srcImg);
+       return $newImg;
+    }
+    private function getNewSize($name,$width,$height,$imgInfo){
+        $size["width"]=$imgInfo["width"];
+        $size["height"]=$imgInfo["height"];
+        //如果缩放后宽度小于原图片宽度，再重新设置图片宽度
+        if($width < $imgInfo["width"]){
+            $size["width"]=$width;
+        }
+       //如果缩放后高度小于原图高度，再重新设置图片高度
+       if($height < $imgInfo["height"]){
+           $size["height"]=$height;
+       }
+       //图片等比例缩放的算法
+       if($imgInfo["width"]*$width > $imgInfo["height"]*$height){
+           $size["height"]=round($imgInfo["height"]*$size["width"]/$imgInfo["width"]);
+       }else{
+          $size["width"]=round($imgInfo["width"]*$size["height"]/$imgInfo["height"]);
+       }
+       return $size;
+    }
+    private function getInfo($name){
+        $date=getImageSize($this->path.$name);
+        $imageInfo["width"]=$date[0];
+        $imageInfo["height"]=$date[1];
+        $imageInfo["type"]=$date[2];
+        return $imageInfo;
+    }
+    private function getImg($name,$imgInfo){
+        $srcPic=$this->path.$name;        //某路径下的图片
+        switch($imgInfo["type"]){
+            case "1":        //gif
+                $img=imagecreatefromgif($srcPic);
+                break;
+            case "2":        //jpg
+                $img=imagecreatefromjpeg($srcPic);
+                break;
+            case "3":        //png
+                $img=imagecreatefrompng($srcPic);
+                break;
+            default:
+                return false;
+        }
+        return $img;
+    }
+
+        /*    功能：为图片加水印
+            *    参数$groundName：背景图片，即需要加水印的图片
+            *    参数$waterMark：水印图片
+            *    参数$waterPos：水印位置，10种状态
+            *        0随机位置
+            *            1顶端居左    2顶端居中    3顶端居右
+            *            4中部居左    5中部居中    6中部居右
+            *            7底部居左    8底部居中    9底部居右
+            *    参数$qz：是加水印后图片名称的前缀
+            *    返回值：处理后图片的名称
+        */
+    public function waterMark($groundName,$waterName,$waterPos=0,$qz="wa_"){
+        if(file_exists($this->path.$groundName) && file_exists($this->path.$waterName)){
+            $groundInfo = $this->getInfo($groundName);
+            $waterInfo = $this->getInfo($waterName);
+            //水印位置
+            if(!$pos = $this->position($groundInfo,$waterInfo,$waterPos)){
+                echo "水印不应该比背景图片小";
+                return;
             }
-
-        }else if(isset($info['width']) && !isset($info['height'])){
-            //固定宽度
-            $width = $info['width'];
-            //计算缩略图高度
-            $src_b = $img_info[0] / $img_info[1];
-            $height = $width / $src_b;
-            $x = 0;
-            $y = 0;
-            $w = $width;
-            $h = $height;
-        }else if(!isset($info['width']) && isset($info['height'])){
-            //固定高度
-            $height = $info['height'];
-            //计算缩略图宽度
-            $src_b = $img_info[0] / $img_info[1];
-            $width = $height * $src_b;
-            $x = 0;
-            $y = 0;
-            $w = $width;
-            $h = $height;
+            $groundImg = $this->getImg($groundName,$groundInfo);
+            $waterImg = $this->getImg($waterName, $waterInfo);
+            $groundImg = $this->copyImage($groundImg, $waterImg, $pos, $waterInfo);
+            return $this->createNewImage($groundImg, $qz.$groundName, $groundInfo);
         }else{
-            self::$error = '必须给出缩略图宽度或高度！';
-            return false;
-        }
-        $thumb = imagecreatetruecolor($width, $height);
-        //背景补白
-        $bg_color = imagecolorallocate($thumb, 255, 255, 255);
-        imagefill($thumb, 0, 0, $bg_color);
-
-        //复制合并：缩略图
-        if (!imagecopyresampled($thumb, $src, $x, $y, 0, 0, $w, $h, $img_info[0], $img_info[1])) {
-            //采样复制失败
-            self::$error = '缩略图制作失败！';
-            return false;
-        }
-        //保存图片
-        $res = $save($thumb, $path . 'thumb_' . $file_info['basename']);
-        //销毁资源
-        imagedestroy($src);
-        imagedestroy($thumb);
-        if ($res) {     //保存成功
-            return 'thumb_' . $file_info['basename'];
-        } else {        //保存失败
-            self::$error = '图片保存失败！';
+            echo "图片或水印不存在";
             return false;
         }
     }
-    /**
-     * @desc 图片裁剪
-     * @param $file,源文件名
-     * @param $path,裁剪图存储路径
-     * @param int $width = 60,裁剪图宽
-     * @param int $height = 60,裁剪图高
-     * @param int $src_x = 0,原图裁剪始点x坐标
-     * @param int $src_y = 0,原图裁剪始点y坐标
-     * @return bool|string,返回裁剪图文件名，错误返回false
-     */
-    public static function crop($file, $path, $width = 60, $height = 60, $src_x = 0, $src_y = 0){
-        if(!self::checkFile($file)) return false;
-        if(!self::checkPath($path)) return false;
 
-        $file_info = pathinfo($file);
-        $file_ext = $file_info['extension'];    //文件扩展名
-        $img_info = getimagesize($file);
-
-        if($src_x + $width > $img_info[0] || $src_y + $height >  $img_info[1]){
-            self::$error = '图片区域选择越界！';
-            return false;
-        }
-
-        //根据文件扩展名确定原图资源函数：打开函数和保存函数
-        $open = 'imagecreatefrom' . self::$ext[$file_ext];
-        $save = 'image' . self::$ext[$file_ext];
-        //打开图片资源
-        $src = $open($file);
-        $crop = imagecreatetruecolor($width, $height);
-
-        if (!imagecopyresampled($crop, $src, 0, 0, $src_x, $src_y, $width, $height, $width, $height)){
-            self::$error = '裁剪失败！';
-            return false;
-        }
-        //保存图片
-        $res = $save($crop, $path . 'corp_' . $file_info['basename']);
-        //销毁资源
-        imagedestroy($src);
-        imagedestroy($crop);
-        if ($res) {     //保存成功
-            return 'corp_' . $file_info['basename'];
-        } else {        //保存失败
-            self::$error = '图片保存失败！';
-            return false;
-        }
+    private function copyImage($groundImg, $waterImg, $pos, $waterInfo){
+        imagecopy($groundImg, $waterImg, $pos["posX"], $pos["posY"], 0, 0, $waterInfo["width"], $waterInfo["height"]);
+        imagedestroy($waterImg);
+        return $groundImg;
     }
-    /**
-     * @desc 单个图片水印添加
-     * @param $dst_file,目标图片文件名
-     * @param $src_file,水印图片文件名
-     * @param $path,添加水印的图片存储路径
-     * @param int $dst_x,水印在目标图片的始点x坐标
-     * @param int $dst_y,水印在目标图片的始点y坐标
-     * @return bool|string,返回添加水印图文件名，错误返回false
-     */
-    public static function watermark($dst_file, $src_file, $path, $dst_x = 0, $dst_y = 0){
-        if(!self::checkFile($dst_file)) return false;
-        if(!self::checkFile($src_file)) return false;
-        if(!self::checkPath($path)) return false;
-        $src_file_info = pathinfo($src_file);
-        $dst_file_info = pathinfo($dst_file);
-        $src_file_ext = $src_file_info['extension'];
-        $dst_file_ext = $dst_file_info['extension'];
-        $open_src = 'imagecreatefrom' . self::$ext[$src_file_ext];
-        $open_dst = 'imagecreatefrom' . self::$ext[$dst_file_ext];
-        $save_dst = 'image' . self::$ext[$dst_file_ext];
-        $src = $open_src($src_file);
-        $dst = $open_dst($dst_file);
-        if(imagesx($src) > imagesx($dst) || imagesy($src) > imagesy($dst) ){
-            self::$error = '水印过大！';
-            return false;
+    private function position($groundInfo,$waterInfo,$waterPos){
+        //需要背景比水印图片大
+       if(($groundInfo["width"] < $waterInfo["width"]) || ($groundInfo["height"] < $waterInfo["height"])){
+           return false;
+       }
+       switch($waterPos){
+           case 1:            //顶部居左
+               $posX=0;
+               $posY=0;
+               break;
+           case 2:            //顶部居中
+               $posX=($groundInfo["width"]-$waterInfo["width"])/2;
+               $posY=0;
+               break;
+           case 3:            //顶部居右
+               $posX=($groundInfo["width"]-$waterInfo["width"]);
+               $posY=0;
+               break;
+           case 4:            //中部居左
+               $posX=0;
+               $posY=($groundInfo["height"]-$waterInfo["height"])/2;
+               break;
+           case 5:            //中部居中
+               $posX=($groundInfo["width"]-$waterInfo["width"])/2;
+               $posY=($groundInfo["height"]-$waterInfo["height"])/2;
+               break;
+           case 6:            //中部居右
+               $posX=($groundInfo["width"]-$waterInfo["width"]);
+               $posY=($groundInfo["height"]-$waterInfo["height"])/2;
+               break;
+           case 7:            //底部居左
+               $posX=0;
+               $posY=($groundInfo["height"]-$waterInfo["height"]);
+               break;
+           case 8:            //底部居中
+               $posX=($groundInfo["width"]-$waterInfo["width"])/2;
+               $posY=($groundInfo["height"]-$waterInfo["height"]);
+               break;
+            case 9:            //底部居右
+                $posX=($groundInfo["width"]-$waterInfo["width"]);
+                $posY=($groundInfo["height"]-$waterInfo["height"]);
+                break;
+            case 0:            //随机位置
+                $posX=rand(0,($groundInfo["width"]-$waterInfo["width"]));
+                $posY=rand(0,($groundInfo["height"]-$waterInfo["height"]));
+                break;
         }
-        if(!imagecopy($dst,$src,$dst_x,$dst_y,0,0,imagesx($src),imagesy($src))){
-            self::$error = '水印添加失败！';
-            return false;
-        }
-        $res = $save_dst($dst, $path . 'watermark_' . $dst_file_info['basename']);
-        imagedestroy($src);
-        imagedestroy($dst);
-        if ($res) {
-            return 'watermark_' . $dst_file_info['basename'];
-        } else {
-            self::$error = '图片保存失败！';
-            return false;
-        }
+        return array("posX"=>$posX, "posY"=>$posY);
     }
 }
