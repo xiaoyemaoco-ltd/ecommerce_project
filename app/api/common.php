@@ -54,6 +54,36 @@ function delFile($filename){
         return '我已经被删除了哦！';
     }
 }
+
+/**
+ * @param $data  要加密的字符串
+ * @param $key   密钥
+ * @return string
+ */
+if (!function_exists('encrypt')) {
+    function encrypt($data, $key = 'encrypt')
+    {
+        $key = md5($key);
+        $x = 0;
+        $len = strlen($data);
+        $l = strlen($key);
+        $char = '';
+        for ($i = 0; $i < $len; $i++) {
+            if ($x == $l) {
+                $x = 0;
+            }
+            $char .= $key{$x};
+            $x++;
+        }
+        $str = '';
+        for ($i = 0; $i < $len; $i++){
+            $str .= chr(ord($data{$i}) + (ord($char{$i})) % 256);
+        }
+        $str = $key . $str;
+        return base64_encode($str);
+    }
+}
+
 if (!function_exists('getplatformMsg')) {
     function getplatformMsg ($plat)
     {

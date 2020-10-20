@@ -41,8 +41,8 @@ class Alibaba
         $url = 'https://gw.open.1688.com/openapi/http/1/system.oauth2/getToken/' . $this->client_id;
         $data = post_curls($url, $param);
         $data = json_decode($data, 1);
-        Redis::set('alibaba_access_token', $data['access_token'], 36000);
-//        dump($data);
-        return redirect('/index/swoftl');
+        $str = encrypt($data['access_token'], env(app.app_key));
+        return redirect('http://www.sxtyyd.com/index/swoftl?token=' . $str);
+//        Redis::set('alibaba_access_token', $data['access_token'], 36000);
     }
 }
