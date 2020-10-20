@@ -101,9 +101,9 @@ class Api{
         $this -> uid = Session::get('userid')['uid'];
         if($this -> match($this->noNeedToken)){return true;};
         //检测是否登录
-        if(empty($token)){
+        /*if(empty($token)){
             exit(json_encode($this->error('401','请登录后操作')));
-        }
+        }*/
         $filed = "b.id as uid,b.user_name as username,b.user_status,a.*";
         $result = Db::name('user_token')
             -> alias('a') -> join('user b','a.user_id=b.id')
