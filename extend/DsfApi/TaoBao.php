@@ -54,15 +54,10 @@ class TaoBao{
         $tbaodetile['detail_url'] = $taoabo_detile['item']['detail_url'];
         $tbaodetile['brand'] = $taoabo_detile['item']['brand'];//品牌名称
         $tbaodetile['brandId'] = $taoabo_detile['item']['brandId'];//品牌ID
-//        $tbaodetile['desc'] = $taoabo_detile['item']['desc'];
+        $tbaodetile['desc'] = $taoabo_detile['item']['desc'];
         $tbaodetile['desc_short'] = $taoabo_detile['item']['desc_short'];//商品简介
         $tbaodetile['desc_img'] = $taoabo_detile['item']['desc_img'];//商品详情图
-//        $tbaodetile['item_imgs'] = $taoabo_detile['item']['item_imgs'];
-        $lunbo = [];
-        foreach ($taoabo_detile['item']['item_imgs'] as $key => $val){
-            $lunbo[] = $val['url'];
-        }
-        $tbaodetile['item_imgs'] = $lunbo;//轮播图
+        $tbaodetile['item_imgs'] = $taoabo_detile['item']['item_imgs'];//轮播图
         $tbaodetile['item_weight'] = $taoabo_detile['item']['item_weight'];
         $tbaodetile['location'] = $taoabo_detile['item']['location'];//发货地
         $tbaodetile['post_fee'] = $taoabo_detile['item']['post_fee'];//物流费用
@@ -90,6 +85,58 @@ class TaoBao{
     }
 
 
+    /**
+     * 关键字搜索商品
+     * @param string $remote_file_url
+     * @param string $local_file
+     */
+    public static function taobaoserch($keyword,$page,$start_price,$end_price,$sort){
+        $obapi = self::openkey();
+        $arr = [];
+        for($i=1;$i<=$page;$i++){
+            $api_data = $obapi->exec(
+                array(
+                    "api_type" =>"taobao",
+                    "api_name" =>"item_search",
+                    "api_params"=>array (
+                        'q' => $keyword,
+                        'start_price' => $start_price,
+                        'end_price' => $end_price,
+                        'page' => $i,
+                        'cat' => '0',
+                        'discount_only' => '',
+                        'sort' => $sort,
+                        'page_size' => 100,
+                        'seller_info' => '',
+                        'nick' => '',
+                        'ppath' => '',
+                        'imgid' => '',
+                        'filter' => '',
+                    )
+                )
+            );
+            $arr = array_merge($arr,$api_data['items']['item']);
+        }
+
+        $arraydata = array();
+        if(count($arr) == 0){
+            return $arraydata;
+        }
+        for ($i = 0; $i<count($arr);$i++){
+            $arraydata[$i]['number'] = $i + 1;
+            $arraydata[$i]['goodsid'] = $arr[$i]['num_iid'];
+            $arraydata[$i]['title'] = $arr[$i]['title'];
+            // $url = explode('&',  $arr[$i]['detail_url']);
+            $arraydata[$i]['detail_url'] = $arr[$i]['detail_url'];
+            $arraydata[$i]['price'] = $arr[$i]['price'];
+            $arraydata[$i]['sales'] = $arr[$i]['sales'];
+            $arraydata[$i]['post_fee'] = $arr[$i]['post_fee'];
+            $arraydata[$i]['shop_nick'] = $arr[$i]['seller_nick'];
+            $arraydata[$i]['area'] = $arr[$i]['area'];
+            $arraydata[$i]['pic_url'] = $arr[$i]['pic_url'];
+        }
+        return $arraydata;
+    }
 
     protected static function openkey(){
         $method = "GET";
