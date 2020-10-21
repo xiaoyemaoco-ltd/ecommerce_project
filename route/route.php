@@ -41,6 +41,10 @@ Route::group('api',function (){
     Route::any('shopauth/pddauthlogin','api/shopauth/pddauthlogin'); // 拼多多店铺授权
     /****************店铺登录************/
 
+    Route::post('pnduoduo/pddgoodlist','api/pnduoduo/pddgoodlist'); // 导入列表
+    Route::post('pnduoduo/pdduploadinfo','api/pnduoduo/pdduploadinfo'); // 上传图片详情
+    Route::post('pnduoduo/pdddaoru','api/pnduoduo/pdddaoru'); // 导入上传
+    Route::post('pnduoduo/pddaddsave','api/pnduoduo/pddaddsave'); // 导入上传
     Route::post('pnduoduo/getTemplates','api/pnduoduo/getTemplates'); // 获取拼多多运费模板
     Route::post('pnduoduo/pddgoodsadd','api/pnduoduo/pddgoodsadd'); // 定义POST请求路由规则
 
