@@ -33,7 +33,7 @@ class Collection extends Api{
     * */
     public function goodslist(Request $request){
         $type =  $request->post('type') ?? 'taobao';
-        // dump(unserialize(Redis::get($this->uid.$type)));die;
+//         dump(unserialize(Redis::get($this->uid.$type)));die;
         $keyword = $request->post('keyword');
         if(!$keyword){
            return  $this->error('401','关键词不能为空');
