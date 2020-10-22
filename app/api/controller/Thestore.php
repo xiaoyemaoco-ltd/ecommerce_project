@@ -30,7 +30,7 @@ class Thestore extends Api {
     //获取拼多多店铺
     public function pddshops(Request $request){
         $res = Db::name('shop_open_user')
-            -> where(['uid'=> $this-> uid,'shop_type'=>'pdd'])
+            -> where(['shop_type'=>'pdd'])//'uid'=> $this-> uid,
             -> field('mall_name,owner_id,access_token,owner_name')
             -> select();
         return  $this -> success('200','获取成功',$res);

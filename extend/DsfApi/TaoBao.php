@@ -84,6 +84,55 @@ class TaoBao{
         return $tbaodetile;
     }
 
+    /**
+     * 关键字搜索商品
+     * @param string $remote_file_url
+     * @param string $local_file
+     */
+    public static function taobaoserch($keyword,$page,$start_price,$end_price,$sort){
+        $obapi = self::openkey();
+        $arr = [];
+        $api_data = $obapi->exec(
+                array(
+                    "api_type" =>"taobao",
+                    "api_name" =>"item_search",
+                    "api_params"=>array (
+                        'q' => $keyword,
+                        'start_price' => $start_price,
+                        'end_price' => $end_price,
+                        'page' => $page,
+                        'cat' => '0',
+                        'discount_only' => '',
+                        'sort' => $sort,
+                        'page_size' => 100,
+                        'seller_info' => '',
+                        'nick' => '',
+                        'ppath' => '',
+                        'imgid' => '',
+                        'filter' => '',
+                    )
+                )
+            );
+        $arr = $api_data['items']['item'];
+        $arraydata = array();
+        if(count($arr) == 0){
+            return $arraydata;
+        }
+        for ($i = 0; $i<count($arr);$i++){
+            $arraydata[$i]['number'] = $i + 1;
+            $arraydata[$i]['goodsid'] = $arr[$i]['num_iid'];
+            $arraydata[$i]['title'] = $arr[$i]['title'];
+            // $url = explode('&',  $arr[$i]['detail_url']);
+            $arraydata[$i]['detail_url'] = $arr[$i]['detail_url'];
+            $arraydata[$i]['price'] = $arr[$i]['price'];
+            $arraydata[$i]['sales'] = $arr[$i]['sales'];
+            $arraydata[$i]['post_fee'] = $arr[$i]['post_fee'];
+            $arraydata[$i]['shop_nick'] = $arr[$i]['seller_nick'];
+            $arraydata[$i]['area'] = $arr[$i]['area'];
+            $arraydata[$i]['pic_url'] = $arr[$i]['pic_url'];
+        }
+        return $arraydata;
+    }
 
     /**
      * 关键字搜索商品

@@ -27,9 +27,7 @@ class Pnduoduo extends Api {
 //
 //    protected static $client_id3 =  "08a18af2cbaf4439aef73f869e6a99d9";//商品优化
 //    protected static $client_secret3 = "485883fa6adb657dcb4c439c14e6a0d9a3e3432b";//商品优化
-//
-//    protected static $client_id = "919269592dd24bf8959bd07f4e0a569b";// 你的client_id
-//    protected static $client_secret = "9d92e889253e0636da0be1de6e15761505c73428"; // 你的client_secret
+
 //    protected static $loginurl = 'http://open-api.pinduoduo.com/oauth/token';
 //    protected static $apiurl = "https://gw-api.pinduoduo.com/api/router";
 //    protected static $redirect_uri ="http://39.96.83.39:777/api/pnduoduo/login";//回调地址
@@ -49,9 +47,9 @@ class Pnduoduo extends Api {
         $this -> pddarray = new PddApi($config);
 //        epre($this -> pddarray);exit;
         $owner_name = input('owner_name');
-        // if(empty($owner_name)){
-        //     exit(json_encode($this -> error('401','店铺账号不能为空!'))) ;
-        // }
+         if(empty($owner_name)){
+             exit(json_encode($this -> error('401','店铺账号不能为空!'))) ;
+         }
 
         $res = Db::name('shop_open_user')
             -> field('mall_name,access_token,refresh_token,endtime,owner_name,owner_id,is_token')
@@ -69,8 +67,8 @@ class Pnduoduo extends Api {
         Db::name('shop_open_user')
             -> where(['shop_type'=>'pdd','owner_name'=>$owner_name])
             -> update(['endtime'=>time()]);
-        // $this -> accessToken = $res['access_token'];
-        $this -> accessToken = '942b856f019c4e869810d68af96bd17c4a7f39f2';
+         $this -> accessToken = $res['access_token'];
+//        $this -> accessToken = '942b856f019c4e869810d68af96bd17c4a7f39f2';
     }
 
     //获取店铺信息
@@ -142,23 +140,33 @@ class Pnduoduo extends Api {
     public function pdddaoru(Request $request){
         $goodsid = $request->post('goodsids');
         // return $goodsid;
+
         if(empty($goodsid)){
             return $this -> error('401','商品ID不能为空!');
         }
         $resinfo = Redis::get($goodsid.'_info');
         if(!$resinfo){
             $res = Cache::get($goodsid.'taobao');
-            $res = Cache::get($goodsid.'taobao');
-//        $ress=array_slice($res['prop_imgs'],0,20);//截取数组
-//        $ress=array_slice($res['skus_list'],0,20);//截取数组
+            if(count($res['prop_imgs']) >=20){
+                $prop_imgs=array_slice($res['prop_imgs'],0,20);//截取数组
+            }else{
+                $prop_imgs=$res['prop_imgs'];//截取数组
+            }
+            if(count($res['prop_imgs']) >=20){
+                $skus_list=array_slice($res['skus_list'],0,20);//截取数组
+            }else{
+                $skus_list=$res['skus_list'];
+            }
             $rescate = TaoBao::goodcate($goodsid);
+            $cateId = $this -> getcat_id($rescate['root_cat_name'],$rescate['cat_name']);
+//            echo $catid;die;
             //查询类目
-            $cate = Db::name('pdd_goods_cat') -> where('cat_name',$rescate['cat_name']) -> select();
+//            $cate = Db::name('pdd_goods_cat') -> where('cat_name',$rescate['cat_name']) -> select();
             //获取最相近的类目
-            $cateId = $this -> closest_word($rescate['cat_name'], $cate);
+//            $cateId = $this -> closest_word($rescate['cat_name'], $cate);
 
             //商品sku列表
-            $sku_list = json_encode($this -> skus_list($cateId,$res['skus_list'],$res['prop_imgs']));
+            $sku_list = json_encode($this -> skus_list($cateId,$skus_list,$prop_imgs));
             //商品属性
             $goods_properties = json_encode($this -> getAttrcats($cateId,$res['props'],$res['pic_url']));
             $title = $res['title'];
@@ -183,9 +191,9 @@ class Pnduoduo extends Api {
     }
 
 
-    //开始上传
-    public function pddaddsave(Request $request){
-        $template_id = $request->post('template_id') ?? '147120650715681';
+    //开始上传   //商品添加或发布
+    public function pddgoodsadd(Request $request){
+        $template_id = $request->post('template_id');
         $goods_type = $request->post('goods_type') ?? 1; //1-国内普通商品，2-进口
         $unit_price = $request->post('unit_price') ?? 0;//单价
         $spell_unit_price = $request->post('spell_unit_price') ?? 0;//拼单价
@@ -248,60 +256,18 @@ class Pnduoduo extends Api {
             'warm_tips' => '',//买家自提模版id
             'zhi_huan_bu_xiu' => 0,//只换不修的天数，目前只支持0和365  非必填
         ];
-        dump($pdd_data);die;
         $result  = $this -> pddarray ->request('pdd.goods.add',$pdd_data);
-        if($result)
-        return $this->success('200','导入成功', $result['']);
-        dump($result);die;
+        if(!empty($result['error_response'])){
+            $data['msg'] =  $result['error_response']['error_msg'];
+        }else{
+            $data['msg'] = "上传成功";
+        }
+        $data['goodsid'] = $goodsid;
+        return $this->success('200','导入成功',$data);
+
     }
 
-    public function closest_word($input, $words){
-        $shortest = -1;
-        foreach ($words as $word) {
-            $lev = levenshtein($input, $word['cat_name']);
-            if ($lev == 0) {
-                $closest = $word['cat_id'];
-                $shortest = 0;
-                break;
-            }
-            if ($lev <= $shortest || $shortest < 0) {
-                $closest = $word['cat_id'];
-                $shortest = $lev;
-            }
-        }
-        return $closest;
-    }
 
-    //商品添加或发布
-    public function pddgoodsadd(Request $request){
-        $cost_template_id = $request->post('template_id');
-        $goods_type = $request->post('goods_type') ?? 1; //1-国内普通商品，2-进口
-        $ids = $request->post('goodsids');
-        $process = $request->post('process') ?? 1;//进程数
-        $unit_price = $request->post('unit_price') ?? 0;//单价
-        $spell_unit_price = $request->post('spell_unit_price') ?? 0;//拼单价
-        if(empty($cost_template_id)){
-            return $this -> error('401','运费模板不能为空!');
-        }
-        if(empty($ids)){
-            return $this -> error('401','商品ID不能为空!');
-        }
-
-        $res = [];
-
-        if (Redis::get($ids)) {
-            $res = json_decode(Redis::get($ids), 1);
-        } else {
-            $goodsId = explode(',', $ids);
-            $id = array_shift($goodsId);
-            do{
-                $res[] = $this->getDoodsDetail($id);
-            }while($a = array_shift($goodsid));
-            $row = json_encode($res);
-            Redis::set($ids, $row, 2592000);
-        }
-        return $this -> success(200,'');
-    }
 
     protected function addsave($cost_template_id,$goods_type,$info){
 //        $start = time();
@@ -531,16 +497,18 @@ class Pnduoduo extends Api {
     //获取运费模板
     public function getTemplates(){
         $result  = $this -> pddarray ->request('pdd.goods.logistics.template.get',['access_token' =>$this -> accessToken]);
-        $templats = $result['goods_logistics_template_get_response']['logistics_template_list'];
-        if($templats == null){
+        if(!empty($result['error_response'])){
+            dump($result['error_response']);die;
             return $this -> error($result['error_response']['error_code'],$result['error_response']['error_msg']) ;
+        }else{
+            $templats = $result['goods_logistics_template_get_response']['logistics_template_list'];
+            $arr = [];
+            foreach ($templats as $key => $val){
+                $arr[$key]['template_name'] = $val['template_name'];//运费模板名称
+                $arr[$key]['template_id'] = $val['template_id'];//	模板id
+            }
+            return $this -> success('200','获取运费模板成功',$arr);
         }
-        $arr = [];
-        foreach ($templats as $key => $val){
-            $arr[$key]['template_name'] = $val['template_name'];//运费模板名称
-            $arr[$key]['template_id'] = $val['template_id'];//	模板id
-        }
-        return $this -> success('200','获取运费模板成功',$arr);
     }
 
     //获取商品类目id
