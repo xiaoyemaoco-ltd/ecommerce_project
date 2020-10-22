@@ -27,9 +27,7 @@ class Pnduoduo extends Api {
 //
 //    protected static $client_id3 =  "08a18af2cbaf4439aef73f869e6a99d9";//商品优化
 //    protected static $client_secret3 = "485883fa6adb657dcb4c439c14e6a0d9a3e3432b";//商品优化
-//
-//    protected static $client_id = "919269592dd24bf8959bd07f4e0a569b";// 你的client_id
-//    protected static $client_secret = "9d92e889253e0636da0be1de6e15761505c73428"; // 你的client_secret
+
 //    protected static $loginurl = 'http://open-api.pinduoduo.com/oauth/token';
 //    protected static $apiurl = "https://gw-api.pinduoduo.com/api/router";
 //    protected static $redirect_uri ="http://39.96.83.39:777/api/pnduoduo/login";//回调地址
@@ -499,16 +497,18 @@ class Pnduoduo extends Api {
     //获取运费模板
     public function getTemplates(){
         $result  = $this -> pddarray ->request('pdd.goods.logistics.template.get',['access_token' =>$this -> accessToken]);
-        if(!$result['error_response']){
+        if(!empty($result['error_response'])){
+            dump($result['error_response']);die;
             return $this -> error($result['error_response']['error_code'],$result['error_response']['error_msg']) ;
+        }else{
+            $templats = $result['goods_logistics_template_get_response']['logistics_template_list'];
+            $arr = [];
+            foreach ($templats as $key => $val){
+                $arr[$key]['template_name'] = $val['template_name'];//运费模板名称
+                $arr[$key]['template_id'] = $val['template_id'];//	模板id
+            }
+            return $this -> success('200','获取运费模板成功',$arr);
         }
-        $templats = $result['goods_logistics_template_get_response']['logistics_template_list'];
-        $arr = [];
-        foreach ($templats as $key => $val){
-            $arr[$key]['template_name'] = $val['template_name'];//运费模板名称
-            $arr[$key]['template_id'] = $val['template_id'];//	模板id
-        }
-        return $this -> success('200','获取运费模板成功',$arr);
     }
 
     //获取商品类目id
