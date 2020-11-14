@@ -16,22 +16,6 @@ use fast\Image;
 use fast\Redis;
 use DsfApi\TaoBao;
 class Pnduoduo extends Api {
-//    protected static $client_id = "919269592dd24bf8959bd07f4e0a569b";// 你的client_id
-//    protected static $client_secret = "9d92e889253e0636da0be1de6e15761505c73428"; // 你的client_secret
-//    protected static $redirect_uri ="http://www.sxtyyd.com/api/pnduoduo/login";//回调地址
-//    protected static $client_id6 = "ec62d493c7f2471cb24ada94ab4d081a";// 企业ERP   bae07a6ea8b25bd739ae1e1b0fba61c0cbcd56b3
-//    protected static $client_secret6 = "bae07a6ea8b25bd739ae1e1b0fba61c0cbcd56b3";// 企业ERP   你的client_secret
-//
-//    protected static $client_id2 =  "e4f6f46de638469abb59bafc6ce5ca28";//促销
-//    protected static $client_secret2 =  "aa110ee70f611e8a296e303d0af005212ef37708";//促销
-//
-//    protected static $client_id3 =  "08a18af2cbaf4439aef73f869e6a99d9";//商品优化
-//    protected static $client_secret3 = "485883fa6adb657dcb4c439c14e6a0d9a3e3432b";//商品优化
-
-//    protected static $loginurl = 'http://open-api.pinduoduo.com/oauth/token';
-//    protected static $apiurl = "https://gw-api.pinduoduo.com/api/router";
-//    protected static $redirect_uri ="http://39.96.83.39:777/api/pnduoduo/login";//回调地址
-
     protected  $accessToken;
     protected  $pddarray;
     public  function initialize(){
@@ -45,11 +29,10 @@ class Pnduoduo extends Api {
             'pdd_token_file' => __DIR__ . '/pdd_token.txt', // token存储文件地址
         );
         $this -> pddarray = new PddApi($config);
-//        epre($this -> pddarray);exit;
         $owner_name = input('owner_name');
-         if(empty($owner_name)){
-             exit(json_encode($this -> error('401','店铺账号不能为空!'))) ;
-         }
+//         if(empty($owner_name)){
+//             exit(json_encode($this -> error('401','店铺账号不能为空!'))) ;
+//         }
 
         $res = Db::name('shop_open_user')
             -> field('mall_name,access_token,refresh_token,endtime,owner_name,owner_id,is_token')
@@ -59,158 +42,177 @@ class Pnduoduo extends Api {
 //            exit(json_encode($this -> error('403','此店铺没有授权!'))) ;
 //        }
 
-//        epre(date("Y-m-d H:i:s",$res['endtime']));exit;
 //        if(time() - $res['endtime'] > 2*60*60){
 //            exit(json_encode($this -> error('403','此店铺授权过期，请重新授权!'))) ;
 //        }
-
         Db::name('shop_open_user')
             -> where(['shop_type'=>'pdd','owner_name'=>$owner_name])
             -> update(['endtime'=>time()]);
          $this -> accessToken = $res['access_token'];
-//        $this -> accessToken = '942b856f019c4e869810d68af96bd17c4a7f39f2';
     }
 
+//    public function
     //获取店铺信息
-    public function getShopInfo(){
-        $result  = $this -> pddarray -> request('pdd.mall.info.get');
+    public function getShopInfo(Request $request){
+        $owner_name = $request -> get['owner_name'];
+        if(empty($owner_name)){
+            exit(json_encode($this -> error('401','店铺账号不能为空!'))) ;
+        }
+        $res = Db::name('shop_open_user')
+            -> field('mall_name,access_token,refresh_token,endtime,owner_name,owner_id,is_token')
+            -> where(['shop_type'=>'pdd','owner_name'=>$owner_name])
+            -> find();
+//        if($res['is_token'] != 1){
+//            exit(json_encode($this -> error('403','此店铺没有授权!'))) ;
+//        }
+//        if(time() - $res['endtime'] > 2*60*60){
+//            exit(json_encode($this -> error('403','此店铺授权过期，请重新授权!'))) ;
+//        }
+        Db::name('shop_open_user')
+            -> where(['shop_type'=>'pdd','owner_name'=>$owner_name])
+            -> update(['endtime'=>time()]);
+        $result  = $this -> pddarray -> request('pdd.mall.info.get',['access_token' => $res['access_token']]);
         return $result;
     }
 
-    //商品列表
-    public function pddgoodlist(){
-       $data =  unserialize(Redis::get($this->uid.'taobao'));
-       return $this->success('200','获取成功',$data);
-    }
 
     //导入拼多多图片信息
-    public function pdduploadinfo(Request $request){
-        $goodsid = $request->post('goodsids');
-        // return $goodsid;
+    public function pdduploadpic(Request $request){
+        $type = $request->post('type');
+        $goodsid = $request->post('goodid');
         if(empty($goodsid)){
             return $this -> error('401','商品ID不能为空!');
         }
+//        $goodsid = "629385298883";
         $res = TaoBao::goodsinfo($goodsid);
-        Cache::set($goodsid.'taobao',$res);
-//        $res = Cache::get($goodsid.'taobao');
-        //  dump($res);die;
+        Cache::set($type.$goodsid,$res);
+        //商品标题
+        Redis::set($goodsid. '_title',$res['title'], 604800);
         //商品主图
-        // Redis::DEL($goodsid. '_product_ztimg');
-        $ztimg = Redis::get($goodsid. '_product_ztimg');
+        $str = substr($res['pic_url'],-3);
         $ztimgurl = '';
-        if (!$ztimg) {
-             $str = substr($res['pic_url'],-3);
-             if($str == 'jpg'){
-                  $ztimgurl = $this -> imgupload($res['pic_url'],1,700,700);
-             }
-            if($ztimgurl == ''){
-                return false;
-            }
-            Redis::set($goodsid . '_product_ztimg', serialize($ztimgurl), 604800);
-        }
-        $proImg = Redis::get($goodsid . '_product_images_url');
-        $pddlunbo = [];//轮播图
-        if (!$proImg) {
-            $images = array_column($res['item_imgs'], 'url');
-            foreach ($images as $v){
-                $str = substr($v,-3);
-                if($str == 'jpg'){
-                    $pddlunbo[] = $this -> imgupload($v,1,700,700);
-                }
-            }
-            Redis::set($goodsid . '_product_images_url', serialize($pddlunbo), 604800);
-        }
-        $descImg = Redis::get($goodsid . '_product_descImg');
-        $desc_img = []; //详情图
-        if(!$descImg){
-            foreach ($res['desc_img'] as $v){
-                $desc_img[] = $this -> imgupload($v,1,700,700);
-            }
-            Redis::set($goodsid . '_product_descImg', serialize($desc_img), 604800);
+        if($str == 'jpg' || $str == 'png'){
+            $ztimgurl = $this -> imgupload($res['pic_url'],1,700,700);
         }
 
-        // $data['images_url'] = unserialize(Redis::get($goodsid . '_product_images_url'));
-        // $data['desc_img'] = unserialize(Redis::get($goodsid . '_product_descImg'));
-        $data['goodsid'] = $goodsid;
+        Redis::set($goodsid . '_product_ztimg', serialize($ztimgurl), 604800);
+        $pddlunbo = [];//轮播图
+        $images = $res['item_imgs'];
+        if(count($images) > 15){
+            $imgeq =  array_slice($images,0,15);
+        }else{
+            $imgeq = $images;
+        }
+
+        foreach ($imgeq as $v){
+            $str = substr($v,-3);
+            if($str == 'jpg' || $str == 'png'){
+                $esimg = $this -> imgupload($v,1,700,700);
+                if($esimg){
+                    $pddlunbo[]   = $esimg;
+                }
+            }
+        }
+        Redis::set($goodsid . '_product_images_url', serialize($pddlunbo), 604800);
+//        Redis::Del($goodsid .'_product_descImg');
+//        $descImg = Redis::get($goodsid . '_product_descImg');
+        $desc_img = []; //详情图
+        $desc_img1 = $res['desc_img'];
+        if(count($res['desc_img']) >= 30){
+            $desc_img2 =  array_slice($res['desc_img'],0,30);
+        }else if(count($res['desc_img']) == 0){
+            $desc_img2 = $res['item_imgs'];
+        }else{
+            $desc_img2 = $res['desc_img'];
+        }
+        foreach ($desc_img2 as $v){
+            $desc_img[] = $this -> imgupload($v,1,700,700);
+        }
+        foreach ($desc_img as $k => $v){
+            if($v == null){
+                unset($desc_img[$k]);
+            }
+        }
+        $desc_img1 = array_merge($desc_img);
+        Redis::set($goodsid . '_product_descImg', serialize($desc_img1), 604800);
         $data['pic_url'] = unserialize(Redis::get($goodsid . '_product_ztimg'));
+        $data['msg'] = "上传图片成功";
+        // $data['images_url'] = unserialize(Redis::get($goodsid . '_product_images_url'));
+//         $data['desc_img'] = unserialize(Redis::get($goodsid . '_product_descImg'));
+        $data['goodsid'] = $goodsid;
         return $this->success('200','获取成功', $data);
     }
 
     //导入上传
-    public function pdddaoru(Request $request){
-        $goodsid = $request->post('goodsids');
-        // return $goodsid;
-
-        if(empty($goodsid)){
-            return $this -> error('401','商品ID不能为空!');
+    public function pdduploadinfo(Request $request){
+        $type = $request->post('type');
+        $goodsid = $request->post('goodid') ;
+        $filerprice = $request->post('filerprice')  ;//团购价
+        $filergeprice = $request->post('filergeprice') ;//单卖价
+        if (empty($goodsid)) {
+            return $this->error('401', '商品ID不能为空!');
         }
-        $resinfo = Redis::get($goodsid.'_info');
-        if(!$resinfo){
-            $res = Cache::get($goodsid.'taobao');
-            if(count($res['prop_imgs']) >=20){
-                $prop_imgs=array_slice($res['prop_imgs'],0,20);//截取数组
-            }else{
-                $prop_imgs=$res['prop_imgs'];//截取数组
-            }
-            if(count($res['prop_imgs']) >=20){
-                $skus_list=array_slice($res['skus_list'],0,20);//截取数组
-            }else{
-                $skus_list=$res['skus_list'];
-            }
-            $rescate = TaoBao::goodcate($goodsid);
-            $cateId = $this -> getcat_id($rescate['root_cat_name'],$rescate['cat_name']);
-//            echo $catid;die;
-            //查询类目
-//            $cate = Db::name('pdd_goods_cat') -> where('cat_name',$rescate['cat_name']) -> select();
-            //获取最相近的类目
-//            $cateId = $this -> closest_word($rescate['cat_name'], $cate);
+        $res = Cache::get($type . $goodsid);
+//        dump(count( $res['skus_list']));die;
+        switch ($type) {
+            case 'taobao':
+                $rescate = TaoBao::goodcate($goodsid);
+                break;
+        }
+        //查询类目
+        $str = '';
+        if(mb_strlen($rescate['cat_name']) > 2){
+            $str .= mb_substr($rescate['cat_name'], -2,2,'utf-8');
+        }else{
+            $str .= $rescate['cat_name'];
+        }
+        $wherecname = [
+            ['cat_name', 'like', "%".$str."%"],
+        ];
 
+        $cat_id = Db::name('pdd_goods_cat') -> where('level = 3 or level =4')->where($wherecname)-> value('cat_id');
+        if (!empty($cat_id)) {
             //商品sku列表
-            $sku_list = json_encode($this -> skus_list($cateId,$skus_list,$prop_imgs));
+            $sku_list = $this->skus_list($cat_id, $res['skus_list'], $res['prop_imgs'],$filerprice,$filergeprice);
+            Redis::set($goodsid . '_sku_list', serialize($sku_list), 604800);
             //商品属性
-            $goods_properties = json_encode($this -> getAttrcats($cateId,$res['props'],$res['pic_url']));
-            $title = $res['title'];
-            $desc_short = $res['desc_short'];//商品简介
-            $market_price = $res['orginal_price'] * 100 * 2;
-//        //商品外部编码
-            $out_goods_id = "WPK-T-".$res['goodsid'];
-            $carousel_video = json_encode([]);
+            $goods_properties = $this->getAttrcats($cat_id, $res['props'], $res['pic_url']);
+            Redis::set($goodsid . '_attr', serialize($goods_properties), 604800);
+            $data['cat_id'] =   $this->getcat_id($wherecname);
+            $data['desc_short'] = $res['desc_short'];//商品简介
+            $data['out_goods_id'] = "WPK-T-" . $res['goodsid']; //商品外部编码
+//            $data['carousel_video'] = json_encode([]);
+            Redis::set($goodsid . '_info', serialize($data), 604800);
 
-            $data['cat_id'] = $cateId;
-            $data['sku_list'] = $sku_list;
-            $data['goods_properties'] = $goods_properties;
-            $data['title'] = $title;
-            $data['desc_short'] = $desc_short;
-            $data['market_price'] = $market_price;
-            $data['out_goods_id'] = $out_goods_id;
-            $data['carousel_video'] = $carousel_video;
-            Redis::set($goodsid.'_info',serialize($data),604800);
+//        $tprice = (int)$filerprice * 100; //团价
+//        $gprice = (int)$filergeprice * 100; //单价
         }
+        $sudata['msg'] = "上传详情成功";
         $sudata['goodsid'] = $goodsid;
-        return $this->success('200','导入成功', $sudata);
+        return $this->success('200', '上传图片成功', $sudata);
     }
-
-
-    //开始上传   //商品添加或发布
+    //开始上传
     public function pddgoodsadd(Request $request){
-        $template_id = $request->post('template_id');
+        $template_id = $request->post('template_id') ?? '147120650715681';
         $goods_type = $request->post('goods_type') ?? 1; //1-国内普通商品，2-进口
-        $unit_price = $request->post('unit_price') ?? 0;//单价
-        $spell_unit_price = $request->post('spell_unit_price') ?? 0;//拼单价
-        $goodsid = $request->post('goodsids');
+        $goodsid = $request->post('goodid') ?? '567892068402';
+        $type = $request->post('type');
         if(empty($template_id)){
             return $this -> error('401','运费模板不能为空!');
         }
         if(empty($goodsid)){
             return $this -> error('401','商品ID不能为空!');
         }
+        $skulist = unserialize(Redis::get($goodsid.'_sku_list'));
+        $last_names = array_column($skulist,'price');
+        array_multisort($last_names,SORT_DESC,$skulist);
         $pddsku = unserialize(Redis::get($goodsid.'_info'));
 //        dump(unserialize(Redis::get($goodsid.'_info')));die;
         $pdd_data = [
             'access_token' => $this -> accessToken,
             'bad_fruit_claim'=>'',
             'buy_limit'=>'',//限购次数   非必填
-            'carousel_video' => $pddsku['carousel_video'],
+            'carousel_video' => '[]',
             'carousel_video_url'=>'',
             'cat_id'=> $pddsku['cat_id'], //叶子类目ID
             'cost_template_id' => $template_id, //物流运费模板ID，可使用pdd.logistics.template.get获取
@@ -221,9 +223,9 @@ class Pnduoduo extends Api {
             'carousel_gallery'=> json_encode(unserialize(Redis::get($goodsid.'_product_images_url'))), //商品轮播图
             'detail_gallery'=> json_encode(unserialize(Redis::get($goodsid.'_product_descImg'))),//商品详情图
             'elec_goods_attributes'=>'',
-            'goods_name'=> $pddsku['title'] ,//	商品标题
+            'goods_name'=> Redis::get($goodsid. '_title') ,//	商品标题
             'goods_desc' => $pddsku['desc_short'],//商品描述
-            'goods_properties'=>$pddsku['goods_properties'],//	商品属性列表  非必填
+            'goods_properties'=> json_encode(unserialize(Redis::get($goodsid.'_attr'))),//	商品属性列表  非必填
             'goods_trade_attr' => '',//日历商品交易相关信息   非必填
             'goods_travel_attr'=> '',//商品出行信息  非必填
             'goods_type' => $goods_type,//1-国内普通商品，2-进口
@@ -236,7 +238,7 @@ class Pnduoduo extends Api {
             'second_hand' => 'false',//是否二手商品，true -二手商品 ，false-全新商品
             'lack_of_weight_claim'=>0 ,//缺重包退  非必填
             'mai_jia_zi_ti' => '',
-            'market_price' => $pddsku['market_price'],//市场价格，单位为分
+            'market_price' => $skulist[0]['price'] + 1000,//市场价格，单位为分
             'order_limit' => 999999,//单次限量   非必填
             'origin_country_id' => '',//原产地id  非必填
             'out_goods_id' => $pddsku['out_goods_id'],//商品编码
@@ -247,7 +249,7 @@ class Pnduoduo extends Api {
             'shang_men_an_zhuang' => '',//上门安装模版id  非必填
             'shipment_limit_second' => 48*3600,
             'size_spec_id' => '',//尺码表id  非必填
-            'sku_list' => $pddsku['sku_list'],
+            'sku_list' => json_encode(unserialize(Redis::get($goodsid.'_sku_list'))),
             'sku_type' => 0,//	库存方式（0：普通型，1：日历型）
             'song_huo_an_zhuang' => '',//送货入户并安装模版id  非必填
             'song_huo_ru_hu' => '',//送货入户模版id  非必填
@@ -257,54 +259,38 @@ class Pnduoduo extends Api {
             'zhi_huan_bu_xiu' => 0,//只换不修的天数，目前只支持0和365  非必填
         ];
         $result  = $this -> pddarray ->request('pdd.goods.add',$pdd_data);
-        if(!empty($result['error_response'])){
-            $data['msg'] =  $result['error_response']['error_msg'];
+        if($result['error_response']){
+            $data['msg'] = $result['error_response']['error_msg'];
         }else{
-            $data['msg'] = "上传成功";
+            Redis::set("WPK-T-".$goodsid,''.$goodsid,604800);
+            $data['msg'] = '上传成功';
+//            $this -> goodsrelation($result['goods_add_response']['goods_id'],$type,$goodsid);
         }
-        $data['goodsid'] = $goodsid;
-        return $this->success('200','导入成功',$data);
+        $data['goodsid']  = $goodsid;
+        return $this->success('200','上传成功', $data);
+//
+    }
 
+    //商品关联信息设置接口
+    public function goodsrelation($goods_id,$type,$goodsid){
+        $res = Cache::get($type . $goodsid);
+        $last_names = array_column($res['skus_list'],'price');
+        array_multisort($last_names,SORT_DESC,$res['skus_list']);
+        $startp = count($res['skus_list'])-1;
+        $data = [
+            'goods_id' => $goods_id,//拼多多商品id
+            'out_detail_url' => $res['detail_url'],//外部平台商品url
+            'out_goods_id' => $goodsid,//外部平台商品id
+            'out_high_goods_price' => $res['skus_list'][0]['price'],//外部平台商品最高价，单位：分
+            'out_low_goods_price' => $res['skus_list'][$startp]['price'],//外部平台商品最低价，单位：分
+            'out_mall_id' =>'',//外部平台店铺id
+            'postage' => '',//邮费
+            'source_type' => $this -> source_type($type)//外部平台
+        ];
+//        pdd.goods.relation.set
     }
 
 
-
-    protected function addsave($cost_template_id,$goods_type,$info){
-//        $start = time();
-        $catid = $this -> getcat_id($info['root_cat_name'],$info['cat_name']);
-
-        $pddlunbo = [];//轮播图
-        foreach ($info['item_imgs'] as $v){
-            $pddlunbo[] = $this -> imgupload($v,1,700,700);;
-        }
-        $carousel_gallery = json_encode($pddlunbo);
-        $desc_img = []; //详情图
-        foreach ($info['desc_img'] as $v){
-            $desc_img[] = $this -> imgupload($v,1,700,700);
-        }
-        $detail_gallery = json_encode($desc_img);
-//        $detail_gallery = json_encode($this -> imgupload1($info['desc_img']));
-//        $carousel_gallery = json_encode($this -> imgupload1($info['item_imgs']));
-//        epre($carousel_gallery);
-//        $end = time();
-//        $counttime = $end - $start;
-//        echo "catid获取总耗时".$counttime;die;
-
-
-        //商品sku列表
-        $sku_list = json_encode($this -> skus_list($catid,$info['skus_list'],$info['prop_imgs']));
-        //商品属性
-        $goods_properties = json_encode($this -> getAttrcats($catid,$info['props']));
-        $title = $info['title'];
-        $desc_short = $info['desc_short'];//商品简介
-        $market_price = $info['orginal_price'] * 100 * 2;
-//        //商品外部编码
-        $out_goods_id = "WPK-T-".$info['goodsid'];
-        $pic_url = $this -> imgupload($info['pic_url'],1,750,352);
-        $carousel_video = json_encode([]);
-        $this -> pddgoodsave($catid,$carousel_video,$cost_template_id,$carousel_gallery,$detail_gallery,$title,$goods_properties,$market_price,
-            $sku_list,$goods_type,$out_goods_id,$pic_url,$desc_short);
-    }
 
     /*上传图片
     * $type 类型 1压缩尺寸 0 不压缩
@@ -313,7 +299,13 @@ class Pnduoduo extends Api {
         if(empty($images)){
             return false;
         }
-        $imageurl = Image::imgtobase64("http:".$images,$type,$iwidth,$iheight);
+        if(strpos($images,'https:') !== false){
+            $imageurl = Image::imgtobase64($images,$type,$iwidth,$iheight);
+        }elseif(strpos($images,'http:') !== false){
+            $imageurl = Image::imgtobase64($images,$type,$iwidth,$iheight);
+        }else{
+            $imageurl = Image::imgtobase64("http:".$images,$type,$iwidth,$iheight);
+        }
         $result  = $this -> pddarray->request('pdd.goods.image.upload',[ 'access_token' =>$this -> accessToken,'image'=>$imageurl]);
         $imgurl = $result['goods_image_upload_response']['image_url'];
         return  $imgurl;
@@ -325,7 +317,7 @@ class Pnduoduo extends Api {
          *   $resskulist  sku 数据
          *   $thumb_urls 缩略图
          * */
-    protected function skus_list($pdd_catid,$resskulist,$thumb_urls){
+    protected function skus_list($pdd_catid,$resskulist,$thumb_urls,$filerprice,$filergeprice){
         $oversea_sku = [
             "measurement_code" => '001',//计量单位编码，从接口pdd.gooods.sku.measurement.list获取code
             "specifications" => "2",//规格
@@ -342,6 +334,8 @@ class Pnduoduo extends Api {
             $a = '';
             $b = '';
             $cmstr = '';
+            $c = '';
+            $ccstr = '';
             foreach ($propImg as $v) {
                 if ( strpos($v, '颜色')) {
                     $a = strpos($v, '颜色');
@@ -351,43 +345,62 @@ class Pnduoduo extends Api {
                     $b = strpos($v, '尺码');
                     $cmstr = $v;
                 }
+                if(strpos($v, '尺寸')){
+                    $c = strpos($v, '尺寸');
+                    $ccstr = $v;
+                }
             }
             $ye = substr($ysstr, $a, strlen($ysstr));
             $cm = substr($cmstr, $b, strlen($cmstr));
+            $cc = substr($cmstr, $c, strlen($ccstr));
             $propImgNum = substr($ysstr, 0, $a - 1);
             $sku_list[$key]['is_onsale'] = 1;
             $sku_list[$key]['limit_quantity'] = 999;
             $sku_list[$key]['weight'] = 1000;
-            $sku_list[$key]['price'] = $val['price'] * 100;
-            $sku_list[$key]['multi_price'] = $val['price'] * 100 - 100;
+            $multi_price = $val['price'] * 100 * floatval($filerprice);
+            $sku_list[$key]['multi_price'] = $multi_price;
+            $sku_list[$key]['price'] =  $multi_price + (int)$filergeprice * 100;//($val['price'] + $filergeprice) * 100
             $sku_list[$key]['thumb_url'] = $this -> imgupload($thumburl[$propImgNum]);
             $sku_list[$key]['out_sku_sn'] = "";//商品sku外部编码
-            $spec_id_list = $this ->skupc_list($pdd_catid,$ye,$cm,'','','');
-            $sku_list[$key]['spec_id_list'] = $spec_id_list;
-            $sku_list[$key]['spec_id_list'] = $this ->skupc_list($pdd_catid,$ye,$cm,'','','');
+//            $spec_id_list = $this ->skupc_list($pdd_catid,$ye,$cm,'','','');
+//            $sku_list[$key]['spec_id_list'] = $spec_id_list;
+            $sku_list[$key]['spec_id_list'] = $this ->skupc_list($pdd_catid,$ye,$cm,$cc,'','');
             $sku_list[$key]['quantity'] = $val['quantity'];
             $sku_list[$key]['oversea_sku'] = $oversea_sku;
             $sku_list[$key]['length'] = '';
         }
+        //        过滤sku为空的spec_id_list、thumb_url字段
         foreach ($sku_list as $key => $val){
-            if($val['spec_id_list'] == '[]'){
+            if($val['spec_id_list'] == '[]' || $val['thumb_url'] == ''){
                 unset($sku_list[$key]);
             }
         }
-        return $sku_list;
+        $sku_list1 = array_merge($sku_list);
+        return $sku_list1;
     }
     //商品规格值ID
-    protected function skupc_list($cat_id,$ye ="",$cm="",$re='',$rs='',$r1=''){
+    protected function skupc_list($cat_id,$ye ="",$cm="",$cc='',$rs='',$r1=''){
         $yearr = explode(':',$ye);
         $cmarr = explode(':',$cm);
-        $yespecid = $this -> getpddskuSpecs($cat_id,substr($yearr[0],0,6),$yearr[1]);
+        $ccarr = explode(':',$cc);
+        $yestr = '';
+        if(strpos($yearr[1],'预售') !== false){
+            $yestr .= mb_substr($yearr[1], 0,2,'utf-8');
+        }else{
+            $yestr .= $yearr[1];
+        }
+        $yespecid = $this -> getpddskuSpecs($cat_id,substr($yearr[0],0,6),$yestr);
         $cmspecid = $this -> getpddskuSpecs($cat_id,$cmarr[0],$cmarr[1]);
+        $ccspecid = $this -> getpddskuSpecs($cat_id,$ccarr[0],$ccarr[1]);
         $str = [];
         if($yespecid){
             $str[] = $yespecid;
         }
         if($cmspecid){
             $str[] = $cmspecid;
+        }
+        if($ccspecid){
+            $str[] = $ccspecid;
         }
         $str = json_encode($str);
         return $str;
@@ -415,132 +428,39 @@ class Pnduoduo extends Api {
         return $result['goods_spec_id_get_response']['spec_id'];
     }
 
-    /* 添加商品数据
-     * $catid 类目id
-     * $carousel_video //视频
-     * $template_id 模板id
-     * $carousel_gallery 轮播图
-     * $detail_gallery 详情图
-     * $title  商品标题
-     * $goods_properties  商品属性列表
-     * $market_price 市场价格
-     * $sku_list
-     * $goods_type 1-国内普通商品，2-进口
-     * $out_goods_id 商品编码
-     * $pic_url 商品主图
-     * */
-    protected function pddgoodsave($catid,$carousel_video,$template_id,$carousel_gallery,$detail_gallery,$title,$goods_properties,$market_price,
-                                   $sku_list,$goods_type,$out_goods_id,$pic_url,$desc_short){
-        $pdd_data = [
-            'access_token' => $this -> accessToken,
-            'bad_fruit_claim'=>'',
-            'buy_limit'=>'',//限购次数   非必填
-            'carousel_video' => $carousel_video,
-            'carousel_video_url'=>'',
-            'cat_id'=> $catid, //叶子类目ID
-            'cost_template_id' => $template_id, //物流运费模板ID，可使用pdd.logistics.template.get获取
-            'country_id' => 0,//国家ID，country_id可以通过pdd.goods.country.get获取
-            'customer_num' => '',//团购人数    非必填
-            'customs' => '',//非必填
-            'delivery_one_day' => 0,//	是否当日发货,0 否，1 是  非必填
-            'carousel_gallery'=> $carousel_gallery, //商品轮播图
-            'detail_gallery'=> $detail_gallery,//商品详情图
-            'elec_goods_attributes'=>'',
-            'goods_name'=> $title,//	商品标题
-            'goods_desc' => $desc_short,//商品描述
-            'goods_properties'=>$goods_properties,//	商品属性列表  非必填
-            'goods_trade_attr' => '',//日历商品交易相关信息   非必填
-            'goods_travel_attr'=> '',//商品出行信息  非必填
-            'goods_type' => $goods_type,//1-国内普通商品，2-进口
-            'image_url'=> $pic_url,//	商品主图
-            'invoice_status' => 0,//是否支持开票（测试中）
-            'is_customs' => 'false',//是否需要上报海关，false-无需上报海关，true-需上报海关  非必填
-            'is_folt' => 'true',//是否支持假一赔十，false-不支持，true-支持
-            'is_pre_sale' => 'false',//是否预售,true-预售商品，false-非预售商品
-            'is_refundable' => 'true',//是否7天无理由退换货，true-支持，false-不支持
-            'second_hand' => 'false',//是否二手商品，true -二手商品 ，false-全新商品
-            'lack_of_weight_claim'=>0 ,//缺重包退  非必填
-            'mai_jia_zi_ti' => '',
-            'market_price' => $market_price,//市场价格，单位为分
-            'order_limit' => 999999,//单次限量   非必填
-            'origin_country_id' => '',//原产地id  非必填
-            'out_goods_id' => $out_goods_id,//商品编码
-            'oversea_goods'=>'', //非必填
-            'oversea_type' => 0,//非必填
-            'pre_sale_time' => 0,//预售时间，is_pre_sale为true时必传   非必填
-            'quan_guo_lian_bao' => 0,//0：不支持全国联保；1：支持全国联保
-            'shang_men_an_zhuang' => '',//上门安装模版id  非必填
-            'shipment_limit_second' => 48*3600,
-            'size_spec_id' => '',//尺码表id  非必填
-            'sku_list' => $sku_list,
-            'sku_type' => 0,//	库存方式（0：普通型，1：日历型）
-            'song_huo_an_zhuang' => '',//送货入户并安装模版id  非必填
-            'song_huo_ru_hu' => '',//送货入户模版id  非必填
-            'tiny_name' => '',//短标题，示例：新包装   非必填
-            'warehouse' => '',//非必填
-            'warm_tips' => '',//买家自提模版id
-            'zhi_huan_bu_xiu' => 0,//只换不修的天数，目前只支持0和365  非必填
-        ];
-        epre($pdd_data);
-        $result  = $this -> pddarray ->request('pdd.goods.add',$pdd_data);
-        epre($result);
-        return $result;
-    }
 
 
     //获取商品信息
     public function goodsdetlits(){
         $result  = $this -> pddarray ->request('pdd.goods.detail.get',['goods_id'=>132500610412]);
-        epre($result);exit;
     }
 
     //获取运费模板
     public function getTemplates(){
         $result  = $this -> pddarray ->request('pdd.goods.logistics.template.get',['access_token' =>$this -> accessToken]);
-        if(!empty($result['error_response'])){
-            dump($result['error_response']);die;
+        $templats = $result['goods_logistics_template_get_response']['logistics_template_list'];
+
+        if($templats == null){
             return $this -> error($result['error_response']['error_code'],$result['error_response']['error_msg']) ;
-        }else{
-            $templats = $result['goods_logistics_template_get_response']['logistics_template_list'];
-            $arr = [];
-            foreach ($templats as $key => $val){
-                $arr[$key]['template_name'] = $val['template_name'];//运费模板名称
-                $arr[$key]['template_id'] = $val['template_id'];//	模板id
-            }
-            return $this -> success('200','获取运费模板成功',$arr);
         }
+        $arr = [];
+        foreach ($templats as $key => $val){
+            $arr[$key]['template_name'] = $val['template_name'];//运费模板名称
+            $arr[$key]['template_id'] = $val['template_id'];//	模板id
+        }
+        return $this -> success('200','获取运费模板成功',$arr);
     }
 
     //获取商品类目id
-    protected  function getcat_id($root_cat_name,$cname){
-        $res = Db::name('pdd_goods_cat') -> where('cat_name',$cname) -> select() -> toArray();
-        $catid = '';
-        if(count($res) == 1){
-            $catid = $res[0]['cat_id'];
-        }else{
-            $rootid = Db::name('pdd_goods_cat') -> where('cat_name',$root_cat_name) -> value('cat_id');
-            $ress = Db::name('pdd_goods_cat') -> where('parent_cat_id',$rootid) -> select();
-            foreach ($ress as $key => $val){
-                $resss = Db::name('pdd_goods_cat') -> where('parent_cat_id',$val['cat_id']) -> select();
-
-                foreach ($resss as $kk => $vv){
-                    if($vv['cat_name'] == $cname){
-                        $catid =  $vv['cat_id'];
-                    }
-                }
-            }
-        }
-        return  $catid;
-
-//        $catid = Db::name('pdd_goods_cat') -> where('cat_name',$cname) -> value('cat_id');
-        //获取到当前商家可发布类目树
-//        $result  = $this -> pddarray ->request('pdd.goods.authorization.cats');
-//        if(empty($result['goods_auth_cats_get_response']['goods_cats_list'])){
-//            return $result['error_response'];
-//        }
+    protected  function getcat_id($cname){
+        $where = " level > 2";
+        $catids = Db::name('pdd_goods_cat') -> where($where) -> where($cname) -> select();
+//        dump(Db::name('pdd_goods_cat') -> getLastSql());die;
+        $catids = array_sort($catids,'level','desc');
+        $catids = array_slice($catids,0,1);
+        $catid = $catids[0]['cat_id'];
+        return $catid;
     }
-
-
 
     //获取原产地
     protected  function selectCountry(){
@@ -588,15 +508,7 @@ class Pnduoduo extends Api {
     }
 
 
-    //商品sku缩略图
-    protected function thump_img($data,$id){
-        foreach ($data as $key => $val){
-            if($val['properties'] == $id) {
-                $thumpurl = $val['url'];
-            }
-        }
-        return $thumpurl;
-    }
+
 
 
 
@@ -608,6 +520,51 @@ class Pnduoduo extends Api {
         return $result;
     }
 
+    public function source_type($type){
+        $type_id = '';
+        switch ($type){
+            case 'taobao':
+            case 'tmall' :
+                $type_id = 0;
+                break;
+            case 'jd':
+                $type_id = 1;
+                break;
+            case '1688':
+                $type_id = 2;
+                break;
+            case 'wph':
+                $type_id = 3;
+                break;
+            case 'sn':
+                $type_id = 4;
+                break;
+            case 'ymx':
+                $type_id = 5;
+                break;
+            case 'wy':
+                $type_id = 6;
+                break;
+            case 'wd':
+                $type_id = 8;
+                break;
+            case 'wsy':
+                $type_id = 9;
+                break;
+            case 'mgj':
+                $type_id = 10;
+                break;
+        }
+
+//        外部平台枚举值， 0-淘宝/天猫 ，1-京东，2-1688，
+//3-唯品会，4-苏宁，5-亚马逊，6-网易，8-微店，
+//9-网商园，10-蘑菇街，11-vvic搜款网，12-搜鞋网，
+//13-一起做网店17zwd，14-杭州女装网，15-折800，
+//16-当当，17-青创网，18-开山网，19-新款网, 
+//20-文轩网，21-博库网，22-四季星座网, 23-童商网，
+//24-淘羊网, 25-成都购商云汇网
+
+    }
 
 
 

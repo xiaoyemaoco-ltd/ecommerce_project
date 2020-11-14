@@ -21,11 +21,39 @@ header('Access-Control-Allow-Credentials:true');//表示是否允许发送Cookie
 define('SOF_NAME','[吾景]:');
 define('API_HOST',$_SERVER['HTTP_HOST']);//获取当前域名
 
-define('SHUJUCUNCHU',app()->getRootPath().'data');
+define('SHUJUCUNCHU',app()->getRootPath().'public');
 if(!is_dir(SHUJUCUNCHU)){
     mkdir(SHUJUCUNCHU,0777,true);
 }
+//判断系统平台
+function smsyem_version(){
+    if (strpos($_SERVER['HTTP_USER_AGENT'], 'iPhone') || strpos($_SERVER['HTTP_USER_AGENT'], 'iPad')) {
+        $app_version = "IOS";
+    } else if (strpos($_SERVER['HTTP_USER_AGENT'], 'Android')) {
+        $app_version = "Android";
+    } else {
+        $app_version = "other";
+    }
+    return $app_version;
+}
 
+//数组排序
+function array_sort($arr,$keys,$type='asc'){
+    $keysvalue = $new_array = array();
+    foreach ($arr as $k=>$v){
+        $keysvalue[$k] = $v[$keys];
+    }
+    if($type == 'asc'){
+        asort($keysvalue);
+    }else{
+        arsort($keysvalue);
+    }
+    reset($keysvalue);
+    foreach ($keysvalue as $k=>$v){
+        $new_array[$k] = $arr[$k];
+    }
+    return $new_array;
+}
 
 //文件下载
 function downloadFile($path){
@@ -42,7 +70,6 @@ function downloadFile($path){
         ob_clean();
         flush();
         readfile($file_path);
-//        delFile($file_path);
         exit;
     }
 }
@@ -54,6 +81,36 @@ function delFile($filename){
         return '我已经被删除了哦！';
     }
 }
+
+/**
+ * @param $data  要加密的字符串
+ * @param $key   密钥
+ * @return string
+ */
+if (!function_exists('encrypt')) {
+    function encrypt($data, $key = 'encrypt')
+    {
+        $key = md5($key);
+        $x = 0;
+        $len = strlen($data);
+        $l = strlen($key);
+        $char = '';
+        for ($i = 0; $i < $len; $i++) {
+            if ($x == $l) {
+                $x = 0;
+            }
+            $char .= $key{$x};
+            $x++;
+        }
+        $str = '';
+        for ($i = 0; $i < $len; $i++){
+            $str .= chr(ord($data{$i}) + (ord($char{$i})) % 256);
+        }
+        $str = $key . $str;
+        return base64_encode($str);
+    }
+}
+
 if (!function_exists('getplatformMsg')) {
     function getplatformMsg ($plat)
     {

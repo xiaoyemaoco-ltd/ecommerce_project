@@ -52,7 +52,7 @@ class Shopauth extends Api {
             }
             $res = $this -> getshopadd($userid,$resArr,$shopInfo);
             if($res == 1){
-                return redirect('http://www.sxtyyd.com/index/pddcallback?pddtoken='.md5($resArr['access_token']));
+                return redirect($request->domain() .'/index/pddcallback?pddtoken='.md5($resArr['access_token']));
             }
         }
     }

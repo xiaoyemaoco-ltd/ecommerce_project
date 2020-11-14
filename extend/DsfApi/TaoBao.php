@@ -57,7 +57,7 @@ class TaoBao{
         $tbaodetile['desc'] = $taoabo_detile['item']['desc'];
         $tbaodetile['desc_short'] = $taoabo_detile['item']['desc_short'];//商品简介
         $tbaodetile['desc_img'] = $taoabo_detile['item']['desc_img'];//商品详情图
-        $tbaodetile['item_imgs'] = $taoabo_detile['item']['item_imgs'];//轮播图
+        $tbaodetile['item_imgs'] = array_column($taoabo_detile['item']['item_imgs'], 'url') ;//轮播图
         $tbaodetile['item_weight'] = $taoabo_detile['item']['item_weight'];
         $tbaodetile['location'] = $taoabo_detile['item']['location'];//发货地
         $tbaodetile['post_fee'] = $taoabo_detile['item']['post_fee'];//物流费用
@@ -84,6 +84,23 @@ class TaoBao{
         return $tbaodetile;
     }
 
+    //获取运费信息
+    public function yunfei($goodsid,$area_id){
+        $obapi = self::openkey();
+        $taoabo_yunfei = $obapi->exec(
+            array(
+                "api_type" => "taobao",
+                "api_name" => "item_fee",
+                "api_params" => array(
+                    'num_iid' => $goodsid,
+                    'area_id' => $area_id,
+                    'sku' => '0',
+                )
+            )
+        );
+        dump($taoabo_yunfei);die;
+        $yunfei['num_iid'] = $taoabo_yunfei[''];
+    }
     /**
      * 关键字搜索商品
      * @param string $remote_file_url
@@ -91,7 +108,6 @@ class TaoBao{
      */
     public static function taobaoserch($keyword,$page,$start_price,$end_price,$sort){
         $obapi = self::openkey();
-        $arr = [];
         $api_data = $obapi->exec(
                 array(
                     "api_type" =>"taobao",
@@ -129,63 +145,13 @@ class TaoBao{
             $arraydata[$i]['post_fee'] = $arr[$i]['post_fee'];
             $arraydata[$i]['shop_nick'] = $arr[$i]['seller_nick'];
             $arraydata[$i]['area'] = $arr[$i]['area'];
-            $arraydata[$i]['pic_url'] = $arr[$i]['pic_url'];
+            $arraydata[$i]['pic_url'] = '';
         }
         return $arraydata;
     }
 
-    /**
-     * 关键字搜索商品
-     * @param string $remote_file_url
-     * @param string $local_file
-     */
-    public static function taobaoserch($keyword,$page,$start_price,$end_price,$sort){
-        $obapi = self::openkey();
-        $arr = [];
-        for($i=1;$i<=$page;$i++){
-            $api_data = $obapi->exec(
-                array(
-                    "api_type" =>"taobao",
-                    "api_name" =>"item_search",
-                    "api_params"=>array (
-                        'q' => $keyword,
-                        'start_price' => $start_price,
-                        'end_price' => $end_price,
-                        'page' => $i,
-                        'cat' => '0',
-                        'discount_only' => '',
-                        'sort' => $sort,
-                        'page_size' => 100,
-                        'seller_info' => '',
-                        'nick' => '',
-                        'ppath' => '',
-                        'imgid' => '',
-                        'filter' => '',
-                    )
-                )
-            );
-            $arr = array_merge($arr,$api_data['items']['item']);
-        }
 
-        $arraydata = array();
-        if(count($arr) == 0){
-            return $arraydata;
-        }
-        for ($i = 0; $i<count($arr);$i++){
-            $arraydata[$i]['number'] = $i + 1;
-            $arraydata[$i]['goodsid'] = $arr[$i]['num_iid'];
-            $arraydata[$i]['title'] = $arr[$i]['title'];
-            // $url = explode('&',  $arr[$i]['detail_url']);
-            $arraydata[$i]['detail_url'] = $arr[$i]['detail_url'];
-            $arraydata[$i]['price'] = $arr[$i]['price'];
-            $arraydata[$i]['sales'] = $arr[$i]['sales'];
-            $arraydata[$i]['post_fee'] = $arr[$i]['post_fee'];
-            $arraydata[$i]['shop_nick'] = $arr[$i]['seller_nick'];
-            $arraydata[$i]['area'] = $arr[$i]['area'];
-            $arraydata[$i]['pic_url'] = $arr[$i]['pic_url'];
-        }
-        return $arraydata;
-    }
+
 
     protected static function openkey(){
         $method = "GET";

@@ -23,29 +23,34 @@ Route::group('api',function (){
 //    Route::get('user/topuplevel','api/index/topuplevel'); //获取充值等级类型
     /****************   采集商品或信息   ************/
     Route::post('collection/goodslist','api/collection/goodslist');//采集商品列表
-    Route::any('collection/collection_download','api/collection/collection_download');//自动保存
-
-    Route::any('collection/one_details','api/collection/one_details');//采集单个商品信息
+    Route::post('collection/getgoodlist','api/collection/getgoodlist');//采集商品列表
+    Route::any('collection/goodeditsave','api/collection/goodeditsave'); // 拼多多店铺授权
     Route::any('collection/filter','api/collection/filter'); // 拼多多店铺授权
+
+    Route::any('collection/collection_download','api/collection/collection_download');//自动保存
+    Route::any('collection/one_details','api/collection/one_details');//采集单个商品信息
 
     Route::any('collection/good_details','api/collection/good_details');//采集单个商品信息
     /****************   采集商品或信息   ************/
 
 //    Route::get('collection/goodslist','api/collection/goodslist');
     /****************店铺管理************/
-    Route::post('thestore/pddshops','api/thestore/pddshops'); // 获取拼多多店铺
+    Route::any('thestore/pddshops','api/thestore/pddshops'); // 获取拼多多店铺
     Route::post('thestore/shops','api/thestore/shops'); // 获取当前店铺管理
     /****************店铺管理************/
 
     /****************店铺登录************/
+    Route::any('pddopen/pddbutton','api/pddopen/pddbutton'); // 拼多多店铺授权
     Route::any('shopauth/pddauthlogin','api/shopauth/pddauthlogin'); // 拼多多店铺授权
     /****************店铺登录************/
 
-    Route::post('pnduoduo/pddgoodlist','api/pnduoduo/pddgoodlist'); // 导入列表
+    Route::any('pnduoduo/getShopInfo','api/pnduoduo/getShopInfo');
+
     Route::post('pnduoduo/pdduploadinfo','api/pnduoduo/pdduploadinfo'); // 上传图片详情
-    Route::post('pnduoduo/pdddaoru','api/pnduoduo/pdddaoru'); // 导入上传
+
+    Route::any('pnduoduo/pdduploadpic','api/pnduoduo/pdduploadpic'); // 导入上传
     Route::post('pnduoduo/pddaddsave','api/pnduoduo/pddaddsave'); // 导入上传
-    Route::post('pnduoduo/getTemplates','api/pnduoduo/getTemplates'); // 获取拼多多运费模板
+    Route::any('pnduoduo/getTemplates','api/pnduoduo/getTemplates'); // 获取拼多多运费模板
     Route::post('pnduoduo/pddgoodsadd','api/pnduoduo/pddgoodsadd'); // 定义POST请求路由规则
 
     Route::any('test/pddadd','api/test/pddadd'); // 获取拼多多店铺

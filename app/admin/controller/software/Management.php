@@ -8,12 +8,15 @@
 namespace app\admin\controller\software;
 use app\common\controller\Backend;
 use think\facade\Db;
+use fast\Exclfile;
 class Management extends Backend{
     protected $model = null;
+    protected $modelcontent = null;
     protected $noNeedRight = ['check', 'rulelist'];
     public function initialize(){
         parent::initialize();
         $this -> model = Db::name('app_version');
+        $this -> modelcontent = Db::name('app_version_content');
     }
     public function index(){
         if ($this->request->isAjax()) {
@@ -55,13 +58,33 @@ class Management extends Backend{
         if ($this->request->isPost()) {
             $params = $this->request->post('row/a');
             if($params){
-                $data['name'] = $params['name'];
-                $data['title'] = $params['title'];
-                $data['status'] = $params['status'];
-                $data['sort'] = $params['sort'];
-                $data['status'] = $params['status'];
-                $data['updatetime'] = time();
-                $this ->model -> where('id',$params['id']) ->  update($params);
+                $data =[
+                    'name' => $params['name'],
+                    'title' => $params['title'],
+                    'edition' => $params['edition'],
+                    'version_mini' => $params['version_mini'],
+                    'version_id' => $params['version_id'],
+                    'version_tip' => $params['version_tip'],
+                    'spath' =>  $params['spath'],
+                    'upspath' => $params['upspath'],
+                    'sort' =>  $params['sort'],
+                    'status' =>  $params['status'],
+                    'updatetime' =>  time()
+                ];
+                $version_mini = (int)$this -> versiondx($params['version_mini']);
+                $version_id = (int)$this -> versiondx($params['version_id']);
+                if($version_id <= $version_mini){
+                    $this->error('大版本号必须大于小版本号！');
+                }
+                $updata = [
+                    'apversionid' => $params['id'],
+                    'version_id' =>$params['version_id'],
+                    'version_tip' => $params['version_tip'],
+                    'content' => $params['content'],
+                    'createtime' => time()
+                ];
+                $this ->model -> where('id',$params['id']) ->  update($data);
+                $this -> modelcontent ->  where('id',$params['id']) ->  insert($updata);
                 $this->success();
             }
             $this->error();
@@ -99,46 +122,20 @@ class Management extends Backend{
 
     //上传软件
     public function upload_software(){
-        $uplaodsrc = 'uploads/';
-        $upload = new Exclfile("$uplaodsrc");
+        $uplaodsrc = '/software/';
+        $upload = new Exclfile(SHUJUCUNCHU);
         $name = input('name');
         if($name == 'pathFile'){
-            $url=$upload -> software('pathFile');
+            $url=$upload -> software('pathFile',$uplaodsrc);
         }else if($name == 'uppathFile'){
-            $url=$upload -> software('uppathFile');
+            $url=$upload -> software('uppathFile',$uplaodsrc);
         }
         exit(json_encode(array('status'=>1,'url'=>$url)));
     }
-    //删除软件
-    public function del_software(){
-        $uplaodinputval = input('logo');
-        $upload_file = __PUBLIC__ ;
-        ds_unlink($upload_file,$uplaodinputval);
-    }
-    //上传文件
-    public function apkfile()
-    {
-        // 获取表单上传文件 例如上传了001.jpg
-        $file = request()->file('image');
-//            var_dump($file);exit();
-        // 移动到框架应用根目录/public/uploads/ 目录下
-        if ($file) {
-            $info = $file->move('uploads', 'H5F9DCF7B');
-            if ($info) {
-                $name = $info->getFilename();
-                return $this->error('文件上传成功,重命名为' . $name);
-            } else {
-                // 上传失败获取错误信息
-                echo $file->getError();
-            }
-        }
-        return $this->fetch();
-    }
-    //删除文件
-    public function unmdir(){
-        $dir = __PUBLIC__."/uploads/msg/";
 
-        del_dir($dir);
+    protected function versiondx($version){
+        $arr = explode('.',$version);
+        $version = $arr[0].$arr[1].$arr[2];
+        return $version;
     }
-
 }

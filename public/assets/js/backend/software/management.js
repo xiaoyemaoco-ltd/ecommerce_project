@@ -44,6 +44,61 @@ define(['jquery', 'bootstrap', 'backend', 'table', 'form'], function ($, undefin
         },
         edit: function () {
             Form.api.bindevent($("form[role=form]"));
+            $(function(){
+                $("#btu_path").click(function () {
+                    $("#filepath").click();
+                })
+                $("#btu-upspath").click(function () {
+                    $("#fileuppath").click();
+                })
+                $(document).on('change','#filepath', function () {
+                    //构造FormData对象并赋值
+                    var formData = new FormData();
+                    //赋值
+                    formData.append("pathFile", this.files[0]);
+                    $.ajax({
+                        url : "software.management/upload_software?name=pathFile",
+                        type : "POST",
+                        data : formData,
+                        processData : false,
+                        contentType : false,
+                        dataType:"json",
+                        success : function(data) {
+                            //console.log(data.status);
+                            if(data.status) {
+                                $('#c-spath').val(data.url);
+                            }
+                        },
+                        error : function(responseStr) {
+                            console.log(responseStr);
+                        }
+                    });
+                })
+                $(document).on('change','#fileuppath', function () {
+                    //构造FormData对象并赋值
+                    var formData = new FormData();
+                    //赋值
+                    formData.append("uppathFile", this.files[0]);
+                    $.ajax({
+                        url : "software.management/upload_software?name=uppathFile",
+                        type : "POST",
+                        data : formData,
+                        processData : false,
+                        contentType : false,
+                        dataType:"json",
+                        success : function(data) {
+                            //console.log(data.status);
+                            if(data.status) {
+                                $('#c-upspath').val(data.url);
+                            }
+                        },
+                        error : function(responseStr) {
+                            console.log(responseStr);
+                        }
+                    });
+                })
+            })
+
         },
         api: {
             // formatter: {

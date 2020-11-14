@@ -21,10 +21,7 @@ header('Access-Control-Allow-Credentials:true');//表示是否允许发送Cookie
 define('SOF_NAME','[吾景]:');
 define('API_HOST',$_SERVER['HTTP_HOST']);//获取当前域名
 
-define('SHUJUCUNCHU',app()->getRootPath().'data');
-if(!is_dir(SHUJUCUNCHU)){
-    mkdir(SHUJUCUNCHU,0777,true);
-}
+
 
 
 //文件下载

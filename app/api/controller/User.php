@@ -64,7 +64,7 @@ class User extends Api{
             'user_name' => $username,
             'user_pass' => md5($password),
             'mobile' => $username,
-            'create_time' => date_ymd(),
+            'create_time' => time(),
             'loginip' => get_client_ip(),
             'seisonid' => md5($username.$password.get_client_ip())
 //            'card_number' => $card_number,
@@ -81,7 +81,7 @@ class User extends Api{
                 Db::commit();
             }
         } catch (\Exception $e) {
-            dump($e->getMessage());
+            dump($e->getMessage());die;
             Db::rollback();
             return $this->error('401','注册失败');
         }
@@ -127,8 +127,8 @@ class User extends Api{
                     'token'=> $token,
                     'update_token_time'=> $time_out,
                 ]);
-                $data2=['uid'=>$result['id'],'username'=>$username,'token'=>$token];
-                Session::set('userid',$data2);
+//                $data2=['uid'=>$result['id'],'username'=>$username,'token'=>$token];
+//                Session::set('userid',$data2);
                 user_log($username,$result['id'],SOF_NAME.$username.'用户登录成功!');
                 $userdata = ['token'=> $token,'username' => $username,'login_status' => 1];
                 return  $this -> success('200','登录成功',$userdata);
@@ -182,8 +182,26 @@ class User extends Api{
         }
     }
 
-
-
+    //更新日志
+    public function update_msg_log(Request $request){
+        $type = $request->get('type');
+        $swappid = $request->get('appid');
+        switch ($type ){
+            case 'suplog' :
+                $swid = Db::name('app_version') -> where(['edition'=>smsyem_version(),'appid' => $swappid]) -> value('id');
+                $swlogarry = Db::name('app_version_content')
+                    -> field('id,version_tip,createtime,version_id')
+                    -> where('apversionid',$swid)
+                    -> order('createtime desc')
+                    -> select() -> toArray();
+                foreach($swlogarry as $k=> $val){
+                    $swlogarry[$k]['createtime'] = date('Y-m-d',$val['createtime']);
+                    $swlogarry[$k]['version_tip'] = explode('|',$val['version_tip']);
+                }
+                return $this->success('200','成功',$swlogarry);
+                break;
+        }
+    }
 
 
 
