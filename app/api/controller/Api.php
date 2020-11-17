@@ -101,9 +101,11 @@ class Api{
         $this -> uid = Session::get('userid')['uid'];
         if($this -> match($this->noNeedToken)){return true;};
         //检测是否登录
+
         if(empty($this -> uid) ){
             return false;
-        }
+         }
+       
         /*if(empty($token)){
             exit(json_encode($this->error('401','请登录后操作')));
         }*/

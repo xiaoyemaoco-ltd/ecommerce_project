@@ -43,6 +43,7 @@ class Alibaba
         $data = json_decode($data, 1);
 //        $str = encrypt($data['access_token'], env(app.app_key));
         return redirect('http://www.sxtyyd.com/index/swoftl?access_token=' . $data['access_token']);
+        return redirect('http://www.sxtyyd.com/index/swoftl?token=' . $data['access_token']);
 //        Redis::set('alibaba_access_token', $data['access_token'], 36000);
     }
 }
