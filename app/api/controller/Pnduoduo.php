@@ -15,6 +15,7 @@ use think\facade\Cache;
 use fast\Image;
 use fast\Redis;
 use DsfApi\TaoBao;
+
 class Pnduoduo extends Api {
     protected  $accessToken;
     protected  $pddarray;
@@ -51,33 +52,15 @@ class Pnduoduo extends Api {
          $this -> accessToken = $res['access_token'];
     }
 
-//    public function
     //获取店铺信息
     public function getShopInfo(Request $request){
-        $owner_name = $request -> get['owner_name'];
-        if(empty($owner_name)){
-            exit(json_encode($this -> error('401','店铺账号不能为空!'))) ;
-        }
-        $res = Db::name('shop_open_user')
-            -> field('mall_name,access_token,refresh_token,endtime,owner_name,owner_id,is_token')
-            -> where(['shop_type'=>'pdd','owner_name'=>$owner_name])
-            -> find();
-//        if($res['is_token'] != 1){
-//            exit(json_encode($this -> error('403','此店铺没有授权!'))) ;
-//        }
-//        if(time() - $res['endtime'] > 2*60*60){
-//            exit(json_encode($this -> error('403','此店铺授权过期，请重新授权!'))) ;
-//        }
-        Db::name('shop_open_user')
-            -> where(['shop_type'=>'pdd','owner_name'=>$owner_name])
-            -> update(['endtime'=>time()]);
-        $result  = $this -> pddarray -> request('pdd.mall.info.get',['access_token' => $res['access_token']]);
-        return $result;
+
     }
 
 
     //导入拼多多图片信息
     public function pdduploadpic(Request $request){
+        set_time_limit(0);
         $type = $request->post('type');
         $goodsid = $request->post('goodid');
         if(empty($goodsid)){
@@ -87,55 +70,63 @@ class Pnduoduo extends Api {
         $res = TaoBao::goodsinfo($goodsid);
         Cache::set($type.$goodsid,$res);
         //商品标题
-        Redis::set($goodsid. '_title',$res['title'], 604800);
+        Redis::set($this->uid.$goodsid. '_title',$res['title'], 604800);
         //商品主图
         $str = substr($res['pic_url'],-3);
         $ztimgurl = '';
         if($str == 'jpg' || $str == 'png'){
             $ztimgurl = $this -> imgupload($res['pic_url'],1,700,700);
         }
-
-        Redis::set($goodsid . '_product_ztimg', serialize($ztimgurl), 604800);
-        $pddlunbo = [];//轮播图
-        $images = $res['item_imgs'];
-        if(count($images) > 15){
-            $imgeq =  array_slice($images,0,15);
-        }else{
-            $imgeq = $images;
-        }
-
-        foreach ($imgeq as $v){
-            $str = substr($v,-3);
-            if($str == 'jpg' || $str == 'png'){
-                $esimg = $this -> imgupload($v,1,700,700);
-                if($esimg){
-                    $pddlunbo[]   = $esimg;
+        Redis::set($this->uid.$goodsid . '_product_ztimg', serialize($ztimgurl), 604800);
+        $product_images_url = Redis::get($goodsid . '_product_images_url');
+        if($product_images_url){
+            $pddlunbo = [];//轮播图
+            $images = $res['item_imgs'];
+            if(count($images) > 15){
+                $imgeq =  array_slice($images,0,15);
+            }else{
+                $imgeq = $images;
+            }
+            foreach ($imgeq as $v){
+                $str = substr($v,-3);
+                if($str == 'jpg' || $str == 'png'){
+                    $esimg = $this -> imgupload($v,1,700,700);
+                    if($esimg){
+                        $pddlunbo[]   = $esimg;
+                    }
                 }
             }
+            Redis::set($goodsid . '_product_images_url', serialize($pddlunbo), 604800);
         }
-        Redis::set($goodsid . '_product_images_url', serialize($pddlunbo), 604800);
+
 //        Redis::Del($goodsid .'_product_descImg');
-//        $descImg = Redis::get($goodsid . '_product_descImg');
-        $desc_img = []; //详情图
-        $desc_img1 = $res['desc_img'];
-        if(count($res['desc_img']) >= 30){
-            $desc_img2 =  array_slice($res['desc_img'],0,30);
-        }else if(count($res['desc_img']) == 0){
-            $desc_img2 = $res['item_imgs'];
-        }else{
-            $desc_img2 = $res['desc_img'];
-        }
-        foreach ($desc_img2 as $v){
-            $desc_img[] = $this -> imgupload($v,1,700,700);
-        }
-        foreach ($desc_img as $k => $v){
-            if($v == null){
-                unset($desc_img[$k]);
+        $descImg = Redis::get($goodsid . '_product_descImg');
+        if($descImg){
+            $desc_img = []; //详情图
+            $desc_img1 = $res['desc_img'];
+            if(count($res['desc_img']) >= 30){
+                $desc_img2 =  array_slice($res['desc_img'],0,30);
+            }else if(count($res['desc_img']) == 0){
+                $desc_img2 = $res['item_imgs'];
+            }else{
+                $desc_img2 = $res['desc_img'];
             }
+            foreach ($desc_img2 as $v){
+                $esimg1 = $this -> imgupload($v,1,700,700);
+                if($esimg){
+                    $desc_img[]   = $esimg1;
+                }
+//                $desc_img[] = $this -> imgupload($v,1,700,700);
+            }
+//            foreach ($desc_img as $k => $v){
+//                if($v == null){
+//                    unset($desc_img[$k]);
+//                }
+//            }
+//            $desc_img1 = array_merge($desc_img);
+            Redis::set($goodsid . '_product_descImg', serialize($desc_img1), 604800);
         }
-        $desc_img1 = array_merge($desc_img);
-        Redis::set($goodsid . '_product_descImg', serialize($desc_img1), 604800);
-        $data['pic_url'] = unserialize(Redis::get($goodsid . '_product_ztimg'));
+        $data['pic_url'] = unserialize(Redis::get($this->uid.$goodsid . '_product_ztimg'));
         $data['msg'] = "上传图片成功";
         // $data['images_url'] = unserialize(Redis::get($goodsid . '_product_images_url'));
 //         $data['desc_img'] = unserialize(Redis::get($goodsid . '_product_descImg'));
@@ -143,6 +134,10 @@ class Pnduoduo extends Api {
         return $this->success('200','获取成功', $data);
     }
 
+    public function Ansypddupload(Request $request){
+        header("content-type:text/html;charset=utf-8");
+        $param = $request->param();
+    }
     //导入上传
     public function pdduploadinfo(Request $request){
         $type = $request->post('type');
@@ -173,19 +168,32 @@ class Pnduoduo extends Api {
         $cat_id = Db::name('pdd_goods_cat') -> where('level = 3 or level =4')->where($wherecname)-> value('cat_id');
         if (!empty($cat_id)) {
             //商品sku列表
-            $sku_list = $this->skus_list($cat_id, $res['skus_list'], $res['prop_imgs'],$filerprice,$filergeprice);
-            Redis::set($goodsid . '_sku_list', serialize($sku_list), 604800);
+            if(count($res['skus_list']) >= 20) {
+                $skus_list = array_slice($res['skus_list'], 0, 20);
+            }else{
+                $skus_list = $res['skus_list'];
+            }
+
+            if(count($res['prop_imgs']) >= 20) {
+                $prop_imgs = array_slice($res['prop_imgs'], 0, 20);
+            }else{
+                $prop_imgs = $res['prop_imgs'];
+            }
+            $sku_list = $this->skus_list($cat_id,$skus_list, $prop_imgs,$filerprice,$filergeprice);
+            Redis::set($this->uid.$goodsid . '_sku_list', serialize($sku_list), 604800);
             //商品属性
-            $goods_properties = $this->getAttrcats($cat_id, $res['props'], $res['pic_url']);
-            Redis::set($goodsid . '_attr', serialize($goods_properties), 604800);
+            if(count($res['props']) >=20){
+                $props = array_slice($res['props'], 0, 20);
+            }else{
+                $props = $res['props'];
+            }
+            $goods_properties = $this->getAttrcats($cat_id, $props, $res['pic_url']);
+            Redis::set($this->uid.$goodsid . '_attr', serialize($goods_properties), 604800);
             $data['cat_id'] =   $this->getcat_id($wherecname);
             $data['desc_short'] = $res['desc_short'];//商品简介
             $data['out_goods_id'] = "WPK-T-" . $res['goodsid']; //商品外部编码
 //            $data['carousel_video'] = json_encode([]);
-            Redis::set($goodsid . '_info', serialize($data), 604800);
-
-//        $tprice = (int)$filerprice * 100; //团价
-//        $gprice = (int)$filergeprice * 100; //单价
+            Redis::set($this->uid.$goodsid . '_info', serialize($data), 604800);
         }
         $sudata['msg'] = "上传详情成功";
         $sudata['goodsid'] = $goodsid;
@@ -203,13 +211,12 @@ class Pnduoduo extends Api {
         if(empty($goodsid)){
             return $this -> error('401','商品ID不能为空!');
         }
-        $skulist = unserialize(Redis::get($goodsid.'_sku_list'));
+        $skulist = unserialize(Redis::get($this->uid.$goodsid.'_sku_list'));
         $last_names = array_column($skulist,'price');
         array_multisort($last_names,SORT_DESC,$skulist);
-        $pddsku = unserialize(Redis::get($goodsid.'_info'));
+        $pddsku = unserialize(Redis::get($this->uid.$goodsid.'_info'));
 //        dump(unserialize(Redis::get($goodsid.'_info')));die;
         $pdd_data = [
-            'access_token' => $this -> accessToken,
             'bad_fruit_claim'=>'',
             'buy_limit'=>'',//限购次数   非必填
             'carousel_video' => '[]',
@@ -223,13 +230,13 @@ class Pnduoduo extends Api {
             'carousel_gallery'=> json_encode(unserialize(Redis::get($goodsid.'_product_images_url'))), //商品轮播图
             'detail_gallery'=> json_encode(unserialize(Redis::get($goodsid.'_product_descImg'))),//商品详情图
             'elec_goods_attributes'=>'',
-            'goods_name'=> Redis::get($goodsid. '_title') ,//	商品标题
+            'goods_name'=> Redis::get($this->uid.$goodsid. '_title') ,//	商品标题
             'goods_desc' => $pddsku['desc_short'],//商品描述
             'goods_properties'=> json_encode(unserialize(Redis::get($goodsid.'_attr'))),//	商品属性列表  非必填
             'goods_trade_attr' => '',//日历商品交易相关信息   非必填
             'goods_travel_attr'=> '',//商品出行信息  非必填
             'goods_type' => $goods_type,//1-国内普通商品，2-进口
-            'image_url'=> unserialize(Redis::get($goodsid.'_product_ztimg')),//	商品主图
+            'image_url'=> unserialize(Redis::get($this->uid.$goodsid.'_product_ztimg')),//	商品主图
             'invoice_status' => 0,//是否支持开票（测试中）
             'is_customs' => 'false',//是否需要上报海关，false-无需上报海关，true-需上报海关  非必填
             'is_folt' => 'true',//是否支持假一赔十，false-不支持，true-支持
@@ -249,7 +256,7 @@ class Pnduoduo extends Api {
             'shang_men_an_zhuang' => '',//上门安装模版id  非必填
             'shipment_limit_second' => 48*3600,
             'size_spec_id' => '',//尺码表id  非必填
-            'sku_list' => json_encode(unserialize(Redis::get($goodsid.'_sku_list'))),
+            'sku_list' => json_encode(unserialize(Redis::get($this->uid.$goodsid.'_sku_list'))),
             'sku_type' => 0,//	库存方式（0：普通型，1：日历型）
             'song_huo_an_zhuang' => '',//送货入户并安装模版id  非必填
             'song_huo_ru_hu' => '',//送货入户模版id  非必填
@@ -258,7 +265,7 @@ class Pnduoduo extends Api {
             'warm_tips' => '',//买家自提模版id
             'zhi_huan_bu_xiu' => 0,//只换不修的天数，目前只支持0和365  非必填
         ];
-        $result  = $this -> pddarray ->request('pdd.goods.add',$pdd_data);
+        $result  = app('pddapi')->request('pdd.goods.add',$this -> accessToken,$pdd_data);
         if($result['error_response']){
             $data['msg'] = $result['error_response']['error_msg'];
         }else{
@@ -268,7 +275,6 @@ class Pnduoduo extends Api {
         }
         $data['goodsid']  = $goodsid;
         return $this->success('200','上传成功', $data);
-//
     }
 
     //商品关联信息设置接口
@@ -306,7 +312,7 @@ class Pnduoduo extends Api {
         }else{
             $imageurl = Image::imgtobase64("http:".$images,$type,$iwidth,$iheight);
         }
-        $result  = $this -> pddarray->request('pdd.goods.image.upload',[ 'access_token' =>$this -> accessToken,'image'=>$imageurl]);
+        $result  = app('pddapi')->request('pdd.goods.image.upload',$this -> accessToken,[ 'image'=>$imageurl]);
         $imgurl = $result['goods_image_upload_response']['image_url'];
         return  $imgurl;
     }
@@ -359,11 +365,9 @@ class Pnduoduo extends Api {
             $sku_list[$key]['weight'] = 1000;
             $multi_price = $val['price'] * 100 * floatval($filerprice);
             $sku_list[$key]['multi_price'] = $multi_price;
-            $sku_list[$key]['price'] =  $multi_price + (int)$filergeprice * 100;//($val['price'] + $filergeprice) * 100
+            $sku_list[$key]['price'] =  $multi_price + floatval($filergeprice) * 100;//($val['price'] + $filergeprice) * 100
             $sku_list[$key]['thumb_url'] = $this -> imgupload($thumburl[$propImgNum]);
-            $sku_list[$key]['out_sku_sn'] = "";//商品sku外部编码
-//            $spec_id_list = $this ->skupc_list($pdd_catid,$ye,$cm,'','','');
-//            $sku_list[$key]['spec_id_list'] = $spec_id_list;
+            $sku_list[$key]['out_sku_sn'] = time().',';//商品sku外部编码
             $sku_list[$key]['spec_id_list'] = $this ->skupc_list($pdd_catid,$ye,$cm,$cc,'','');
             $sku_list[$key]['quantity'] = $val['quantity'];
             $sku_list[$key]['oversea_sku'] = $oversea_sku;
@@ -407,7 +411,8 @@ class Pnduoduo extends Api {
     }
     //获取该分类下所有规格属性
     protected  function getpddskuSpecs($cat_id,$spec_cate,$specname){
-        $result  = $this -> pddarray->request('pdd.goods.spec.get',['access_token' =>$this -> accessToken,'cat_id'=>$cat_id]);
+        $result  = app('pddapi')->request('pdd.goods.spec.get',$this -> accessToken,['cat_id'=>$cat_id]);
+//        $result  = $this -> pddarray->request('pdd.goods.spec.get',['access_token' =>$this -> accessToken,'cat_id'=>$cat_id]);
         $result = $result['goods_spec_get_response']['goods_spec_list'];
         $specid = '';
         foreach ($result as $item) {
@@ -424,7 +429,8 @@ class Pnduoduo extends Api {
      * $spec_name 商家编辑的规格值
      * */
     protected  function getpddskuSpecsId($specid,$spec_name){
-        $result  = $this -> pddarray->request('pdd.goods.spec.id.get',['access_token' =>$this -> accessToken,'parent_spec_id'=>$specid,'spec_name'=>$spec_name]);
+        $result  = app('pddapi')->request('pdd.goods.spec.id.get',$this -> accessToken,['parent_spec_id'=>$specid,'spec_name'=>$spec_name]);
+//        $result  = $this -> pddarray->request('pdd.goods.spec.id.get',['access_token' =>$this -> accessToken,'parent_spec_id'=>$specid,'spec_name'=>$spec_name]);
         return $result['goods_spec_id_get_response']['spec_id'];
     }
 
@@ -432,12 +438,14 @@ class Pnduoduo extends Api {
 
     //获取商品信息
     public function goodsdetlits(){
-        $result  = $this -> pddarray ->request('pdd.goods.detail.get',['goods_id'=>132500610412]);
+        $result  = app('pddapi')->request('pdd.goods.detail.get');
+//        $result  = $this -> pddarray ->request('pdd.goods.detail.get',['goods_id'=>132500610412]);
     }
 
     //获取运费模板
     public function getTemplates(){
-        $result  = $this -> pddarray ->request('pdd.goods.logistics.template.get',['access_token' =>$this -> accessToken]);
+        $result  = app('pddapi')->request('pdd.goods.logistics.template.get',$this -> accessToken);
+//        $result  = $this -> pddarray ->request('pdd.goods.logistics.template.get',['access_token' =>$this -> accessToken]);
         $templats = $result['goods_logistics_template_get_response']['logistics_template_list'];
 
         if($templats == null){
@@ -464,14 +472,16 @@ class Pnduoduo extends Api {
 
     //获取原产地
     protected  function selectCountry(){
-        $result  = $this -> pddarray->request('pdd.goods.country.get',['access_token' =>$this -> accessToken]);
+        $result  = app('pddapi')->request('pdd.goods.country.get',$this -> accessToken);
+//        $result  = $this -> pddarray->request('pdd.goods.country.get',['access_token' =>$this -> accessToken]);
         $result = $result['goods_country_get_response']['country_list'];
         return $result;
     }
 
     //获取商品属性
     protected function getAttrcats($cat_id,$data){
-        $result  = $this -> pddarray->request('pdd.goods.cat.template.get',['access_token' =>$this -> accessToken,'cat_id'=>$cat_id]);
+        $result  = app('pddapi')->request('pdd.goods.cat.template.get',$this -> accessToken,['cat_id'=>$cat_id]);
+//        $result  = $this -> pddarray->request('pdd.goods.cat.template.get',['access_token' =>$this -> accessToken,'cat_id'=>$cat_id]);
         $res = $result['open_api_response']['properties'];
         $arr = [];
         foreach ($res as $key => $val){
@@ -509,13 +519,10 @@ class Pnduoduo extends Api {
 
 
 
-
-
-
-
     //商品sku计量单位枚举
     public function getskumeasurement(){
-        $result  = $this -> pddarray->request('pdd.gooods.sku.measurement.list',['access_token' =>$this -> accessToken]);
+        $result  = app('pddapi')->request('pdd.gooods.sku.measurement.list',$this -> accessToken);
+//        $result  = $this -> pddarray->request('pdd.gooods.sku.measurement.list',['access_token' =>$this -> accessToken]);
         $result = $result['gooods_sku_measurement_list_response'];
         return $result;
     }
@@ -567,342 +574,24 @@ class Pnduoduo extends Api {
     }
 
 
-
-
-    /* 获取拼多多类目树
-            * $pid  父类id
-            */
-    protected  function PddcateTree($pid){
-        $cate = [];
-        $result  = $this -> pddarray->request('pdd.goods.cats.get',['access_token' =>$this -> accessToken,'parent_cat_id'=>$pid]);
-//        if(!$result['goods_cats_get_response']['goods_cats_list']){
-//            epre($result['error_response']);exit;
-//        }
-        foreach ($result['goods_cats_get_response']['goods_cats_list'] as $key => $val){
-            $cate[$key]['level'] = $val['level'];
-            $cate[$key]['cat_id'] = $val['cat_id'];
-            $cate[$key]['parent_cat_id'] = $val['parent_cat_id'];
-            $cate[$key]['cat_name'] = $val['cat_name'];
-        }
-        return $cate;
-    }
-
-
-
-    //获取到当前商家可发布类目树
-    public  function pddTree(){
-//        $result  = $this -> pddarray->request('pdd.goods.cats.get',['parent_cat_id'=>17428]);//
-//        epre($result);exit;
-
-        //判断一级类目是否存在
-        $treecate1 = Db::name('pdd_goods_cat') -> where('level',1) -> select();
-        if(empty($treecate1)){
-            //获取一级类目
-            $cate1 = self::PddcateTree(0);
-            foreach ($cate1 as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['month'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-        }else{
-            $catetreetime2 = Db::name('pdd_goods_cat') -> where('level',1) -> value('end_time');
-            if(time() - strtotime($catetreetime2) > 0){
-                $cate1 = self::PddcateTree(0);
-                foreach ($cate1 as $k1=>$v2){
-                    $v2['end_time'] = getday()['month'];
-                    Db::name('pdd_goods_cat') -> where('cat_id',$v2['cat_id']) -> update($v2);
-                }
-            }
-//            foreach ($treecate1 as $key => $val){
-//                if(time() - strtotime($val['end_time']) > 0){
-//
-//                }
-//            }
-        }
-
-        //判断二级分类
-        $treecate2 = Db::name('pdd_goods_cat') -> where('level',2)  -> select();
-        $cate3 =[];
-        if(empty($treecate2)){
-            foreach ($treecate1 as $key => $val){
-                $cate2[$key] = self::PddcateTree($val['cat_id']);
-                $cate3 = array_merge_recursive($cate3,$cate2[$key]);
-            }
-            foreach ($cate3 as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-        }else{
-            //查询二级分类到期更新时间
-            $catetreetime2 = Db::name('pdd_goods_cat') -> where('level',2) -> value('end_time');
-            if(time() - strtotime($catetreetime2) > 0){
-                foreach ($treecate1 as $key => $val){
-                    sleep(1);
-                    $cate2[$key] = self::PddcateTree($val['cat_id']);
-                    $cate3 = array_merge_recursive($cate3,$cate2[$key]);
-                }
-                foreach ($cate3 as $k1=>$v2){
-                    $v2['end_time'] = getday()['week'];
-                    Db::name('pdd_goods_cat') -> where('cat_id',$v2['cat_id']) -> update($v2);
-                }
-            }
-        }
-
-        //判断三级分类
-        $treecate3 = Db::name('pdd_goods_cat') -> where('level',3) -> select();
-        if(empty($treecate3)){
-            $cate4 =[];
-            $cate5 =[];
-            $result = Db::name('pdd_goods_cat') -> where('level',2)
-                ->where('id','>',107) -> where('id','<',707) -> select();
-            foreach ($result as $key => $val){
-                $cate31[$key] = self::PddcateTree($val['cat_id']);
-                $cate4 = array_merge_recursive($cate4,$cate31[$key]);
-            }
-            foreach ($cate4 as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-            $result1 = Db::name('pdd_goods_cat') -> where('level',2)
-                ->where('id','>',707) -> where('id','<',1443) -> select();
-            foreach ($result1 as $key => $val){
-                $cate32[$key] = self::PddcateTree($val['cat_id']);
-                $cate5 = array_merge_recursive($cate5,$cate32[$key]);
-            }
-
-            foreach ($cate5 as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-        }else{
-            //查询三级分类到期更新时间
-            $catetreetime3 = Db::name('pdd_goods_cat') -> where('level',3) -> value('end_time');
-            if(time() - strtotime($catetreetime3) > 0){
-                echo 222222222;exit;
-            }
-        }
-        //判断四级分类
-        $treecate4 = Db::name('pdd_goods_cat') -> where('level',4) -> select();
-        if(empty($treecate4)){
-            $cate61 =[];
-            if(empty(Session::get('insertcate41'))){
-                $result = Db::name('pdd_goods_cat') -> where('level',3)
-                    ->where('id','>',1443) -> where('id','<',2443) -> select();
-                foreach ($result as $key => $val){
-                    $result11  = $this -> pddarray->request('pdd.goods.cats.get',['parent_cat_id'=>$val['cat_id']]);
-                    $cate41[$key] = $result11['goods_cats_get_response']['goods_cats_list'];
-                    $cate61 = array_merge_recursive($cate61,$cate41[$key]);
-                }
-                Session::set('insertcate41',$cate61);
-            }
-            foreach (Session::get('insertcate41') as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-//            epre(Session::get('insertcate41'));
-            $cate62 =[];
-            if(empty(Session::get('insertcate42'))){
-                $result1 = Db::name('pdd_goods_cat') -> where('level',3)
-                    ->where('id','>',2443) -> where('id','<',3443) -> select();
-                foreach ($result1 as $key => $val){
-                    $cate42[$key] = self::PddcateTree($val['cat_id']);
-                    $cate62 = array_merge_recursive($cate62,$cate42[$key]);
-                }
-                Session::set('insertcate42',$cate62);
-            }
-            foreach (Session::get('insertcate42') as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-
-
-            $cate63 =[];
-            if(empty(Session::get('insertcate43'))){
-                $result2 = Db::name('pdd_goods_cat') -> where('level',3)
-                    ->where('id','>',3443) -> where('id','<',4443) -> select();
-                foreach ($result2 as $key => $val){
-                    $cate43[$key] = self::PddcateTree($val['cat_id']);
-                    $cate63 = array_merge_recursive($cate63,$cate43[$key]);
-                }
-                Session::set('insertcate43',$cate63);
-            }
-            foreach (Session::get('insertcate43') as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-
-
-            $cate64 =[];
-            if(empty(Session::get('insertcate44'))){
-                $result3 = Db::name('pdd_goods_cat') -> where('level',3)
-                    ->where('id','>',4443) -> where('id','<',5443) -> select();
-                foreach ($result3 as $key => $val){
-                    $cate44[$key] = self::PddcateTree($val['cat_id']);
-                    $cate64 = array_merge_recursive($cate64,$cate44[$key]);
-                }
-                Session::set('insertcate44',$cate64);
-            }
-            foreach (Session::get('insertcate44') as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-            $cate65 =[];
-            if(empty(Session::get('insertcate45'))){
-                $result4 = Db::name('pdd_goods_cat') -> where('level',3)
-                    ->where('id','>',5443) -> where('id','<',6443) -> select();
-
-                foreach ($result4 as $key => $val){
-                    $cate45[$key] = self::PddcateTree($val['cat_id']);
-                    $cate65 = array_merge_recursive($cate65,$cate45[$key]);
-                }
-                Session::set('insertcate45',$cate65);
-            }
-            foreach (Session::get('insertcate45') as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-
-            $cate66 =[];
-            if(empty(Session::get('insertcate46'))){
-                $result5 = Db::name('pdd_goods_cat') -> where('level',3)
-                    ->where('id','>',6443) -> where('id','<',7443) -> select();
-                foreach ($result5 as $key => $val){
-                    $result11  = $this -> pddarray->request('pdd.goods.cats.get',['parent_cat_id'=>$val['cat_id']]);
-                    $cate46[$key] = $result11['goods_cats_get_response']['goods_cats_list'];
-                    $cate66 = array_merge_recursive($cate66,$cate46[$key]);
-                }
-                Session::set('insertcate46',$cate66);
-            }
-            foreach (Session::get('insertcate46') as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-
-            $cate67 =[];
-            if(empty(Session::get('insertcate47'))){
-                $result6 = Db::name('pdd_goods_cat') -> where('level',3)
-                    ->where('id','>',7443) -> where('id','<',8443) -> select();
-                foreach ($result6 as $key => $val){
-                    $cate47[$key] = self::PddcateTree($val['cat_id']);
-                    $cate67 = array_merge_recursive($cate67,$cate47[$key]);
-                }
-                Session::set('insertcate47',$cate67);
-            }
-            foreach (Session::get('insertcate47') as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-            $cate68 =[];
-            if(empty(Session::get('insertcate48'))){
-                $result7 = Db::name('pdd_goods_cat') -> where('level',3)
-                    ->where('id','>',8443) -> where('id','<',9345) -> select();
-                foreach ($result7 as $key => $val){
-                    $cate48[$key] = self::PddcateTree($val['cat_id']);
-                    $cate68 = array_merge_recursive($cate68,$cate48[$key]);
-                }
-                Session::set('insertcate48',$cate68);
-            }
-            foreach (Session::get('insertcate48') as $key => $val){
-                $val['create_time'] = date('Y-m-d H:i:s',time());
-                $val['end_time'] = getday()['week'];
-                $res = Db::name('pdd_goods_cat') -> where('cat_id',$val['cat_id']) -> find();
-                if(empty($res)){
-                    Db::name('pdd_goods_cat') -> insert($val);
-                }
-            }
-        }
-    }
-
-
-
-
-
-
-
-
-    /**
-     * evaluation_rules表
-     * 当店铺初次授权生成初始化期望dsr值
-     * @param $ownerId
-     * @throws \think\Exception
-     */
-    public function saveInitDsr($ownerId){
-        $db2 = Db::connect('pfpartner2');
-        $evaluationRule['owner_id'] = $ownerId;
-        $evaluationRule['default_evaluate'] = '1';
-        $evaluationRule['remarks_evaluate'] = '1';
-        $evaluationRule['dsr_score_describe'] = '5';
-        $evaluationRule['dsr_score_logistics'] = '5';
-        $evaluationRule['dsr_score_attitude'] = '5';
-        $db2->name('evaluation_rules')->insert($evaluationRule);
-    }
-
-    /**
-     * purchase_record表
-     * 当店铺初次授权生成初始化免费试用记录
-     * @param $ownerId
-     * @param $mallName
-     * @throws \think\Exception
-     */
-    public function saveFreeRecord($ownerId,$mallName){
-        $db2 = Db::connect('pfpartner2');
-        $initRecord['owner_id'] = $ownerId;
-        $initRecord['mall_name'] = $mallName;
-        $initRecord['data_date'] = date('Y-m-d');
-        $initRecord['product_name'] = '免费试用';
-        $initRecord['product_type'] = '2';
-        $initRecord['payment_method'] = '2';
-        $initRecord['product_details'] = '免费试用';
-        $initRecord['start_time'] = date('Y-m-d H:i:s');
-        $initRecord['end_time'] = date('Y-m-d H:i:s', strtotime('7 days'));
-        $initRecord['day'] = '7';
-        $initRecord['original_price'] = '0';
-        $initRecord['discount_price'] = '0';
-        $initRecord['actual_price'] = '0';
-        $db2->name('purchase_record')->insert($initRecord);
-
+    public function authkkk(){
+        $pinDuoDuoGoodsData = $this -> pinDuoDuo ->request('pdd.goods.list.get',
+            ['page' => $this->page, 'page_size' => $this->page_size], ‘用户的access_token’);
+        //无需授权
+        /** @var string 获取购买应用订单列表 */
+//       const API_PDD_VAS_ORDER_SEARCH = 'pdd.vas.order.search';
+//       //需授权
+//       /** @var string 获取商品列表 */
+//       const API_PDD_GOODS_LIST_GET = 'pdd.goods.list.get';
+//       /** @var string 获取商品列表 */
+//       const API_PDD_GOODS_DETAIL_GET = 'pdd.goods.detail.get';
+//       /** @var string 修改商品信息 */
+//       const API_PDD_GOODS_INFORMATION_UPDATE = 'pdd.goods.information.update';
+//       /** @var string 上传图片 */
+//       const API_PDD_GOODS_IMAGE_UPLOAD = 'pdd.goods.image.upload';
+//       /** @var string 商品编辑结果查询 */
+//       const API_PDD_GOODS_COMMIT_DETAIL_GET = 'pdd.goods.commit.detail.get';
+//       /** @var string 获取店铺信息 */
+//       const API_PDD_MALL_INFO_GET = 'pdd.mall.info.get';
     }
 }

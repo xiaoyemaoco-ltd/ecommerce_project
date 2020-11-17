@@ -96,7 +96,6 @@ class Download extends BaseController{
         }
     }
 
-
     //检测更新接口(安卓独用)
     public function check_versions()
     {

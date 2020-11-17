@@ -13,7 +13,7 @@ use think\facade\Cache;
 use fast\Redis;
 use DsfApi\TaoBao;
 class Collection extends Api{
-    protected $noNeedLogin = ['filter','test'];
+    protected $noNeedLogin = ['filter','test','goodslist'];
     protected $noNeedToken = ['collection_download','goodslist'];
     protected $pathfile = null;//保存的物理路径
     protected $path = null;//根路径
@@ -161,47 +161,5 @@ class Collection extends Api{
         Cache::set("$strnumids",$array);
         return  $this->success('2','获取详情成功');
     }
-
-    //判断商品是否存在
-    public function istaobaogoods($goodsid){
-        $goodsdata = [];
-        $info = Db::name('goodsinfo')->where(['goods_id' => $goodsid])->find();
-        if(empty($info)){
-            $taoabo_detile = $this -> gooddelties($goodsid);
-            if(empty($taoabo_detile)) return;
-            $goodsdata['goods_id'] = $taoabo_detile['num_iid'];
-            $goodsdata['cat_id'] = $taoabo_detile['cid'];
-            $goodsdata['cat_name'] = $taoabo_detile['cat_name'];//分类名称
-            $goodsdata['root_cat_name'] = $taoabo_detile['root_cat_name'];//父级分类名称
-            $goodsdata['root_cat_id'] = $taoabo_detile['rootCatId'];//顶级分类ID
-            $goodsdata['good_detile'] = json_encode($taoabo_detile);//顶级分类ID
-            $goodsdata['create_time'] =getday()['week'];
-            Db::name('goodsinfo') -> insert($goodsdata);
-        }else{
-            if (time() - strtotime($info['create_time']) > 0) {
-                $taoabo_detile = $this -> gooddelties($goodsid);
-                if(empty($taoabo_detile)) return;
-                $goodsdata['goods_id'] = $taoabo_detile['num_iid'];
-                $goodsdata['cat_id'] = $taoabo_detile['cid'];
-                $goodsdata['cat_name'] = $taoabo_detile['cat_name'];//分类名称
-                $goodsdata['root_cat_name'] = $taoabo_detile['root_cat_name'];//父级分类名称
-                $goodsdata['root_cat_id'] = $taoabo_detile['rootCatId'];//顶级分类ID
-                $goodsdata['good_detile'] = json_encode($taoabo_detile);//顶级分类ID
-                $goodsdata['create_time'] =getday()['week'];
-                Db::name('goodsinfo')->where('goods_id', $goodsid)->update($goodsdata);
-            }
-            $arr['cat_id'] = $info['cat_id'];
-            $arr['cat_name'] = $info['cat_name'];
-            $arr['good_detile'] = json_decode($info['good_detile'],true);
-        }
-        if(!empty($goodsdata)){
-            $arr['cat_id'] = $goodsdata['cat_id'];
-            $arr['cat_name'] = $goodsdata['cat_name'];
-            $arr['good_detile'] = json_decode($goodsdata['good_detile'],true);
-        }
-        return $arr;
-    }
-
-
 
 }

@@ -100,7 +100,7 @@ class User extends Api{
         if (! $username || ! $password) {
             $this->error(401,'账号或密码不能为空');
         }
-        $where = "u.user_name = '$username' or u.mobile='$username' or tu.card_number='$username' and user_pass='".md5($password)."'";
+        $where = "(u.user_name = '$username' or u.mobile='$username' or tu.card_number='$username')  and user_pass='".md5($password)."'";
         $result = Db::name('user') -> alias('u') -> join('topup tu','tu.uid=u.id') -> where($where)  -> find();
         //判断账号是否存在
         if($result){

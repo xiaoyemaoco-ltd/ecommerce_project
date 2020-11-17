@@ -6,7 +6,6 @@
  * Time: 10:54
  */
 use think\facade\Route;
-
 Route::group('api',function (){
     Route::post('sms/send','api/sms/send'); //发送验证码、
     /****************     会员   ************/
@@ -40,12 +39,14 @@ Route::group('api',function (){
     /****************店铺管理************/
 
     /****************店铺登录************/
-    Route::any('pddopen/pddbutton','api/pddopen/pddbutton'); // 拼多多店铺授权
+    Route::any('shopauth/pddbutton','api/shopauth/pddbutton'); //点击跳转到授权页面
     Route::any('shopauth/pddauthlogin','api/shopauth/pddauthlogin'); // 拼多多店铺授权
+    Route::any('shopauth/AsynProcess','api/shopauth/AsynProcess'); // 拼多多异步执行文件
+    Route::any('shopauth/Asynpddcate','api/shopauth/Asynpddcate'); // 拼多多异步执行文件
     /****************店铺登录************/
 
     Route::any('pnduoduo/getShopInfo','api/pnduoduo/getShopInfo');
-
+    Route::any('pnduoduo/Ansypddupload','api/pnduoduo/Ansypddupload');//拼多多异步操作
     Route::post('pnduoduo/pdduploadinfo','api/pnduoduo/pdduploadinfo'); // 上传图片详情
 
     Route::any('pnduoduo/pdduploadpic','api/pnduoduo/pdduploadpic'); // 导入上传

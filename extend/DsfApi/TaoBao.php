@@ -129,6 +129,9 @@ class TaoBao{
                     )
                 )
             );
+        if($api_data['error_code'] == '4013'){
+            exit(json_decode($api_data['error']));
+        }
         $arr = $api_data['items']['item'];
         $arraydata = array();
         if(count($arr) == 0){

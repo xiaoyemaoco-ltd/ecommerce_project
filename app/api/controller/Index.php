@@ -19,11 +19,6 @@ class Index extends Api{
         $img = "http://img.alicdn.com/imgextra/i4/2996327771/O1CN01oV5DYk27HAQBklvBi_!!2996327771.jpg";
         $img = imgtobase64($img,1,750,320);
         echo $img;die;
-////        $_path = 'D:/test1.png';
-//
-//        $_img = new Image(app()->getRootPath().$img);//$_path为图片文件的路径
-//        $_img->thumb(150, 100);
-//        $_img->out();
     }
 
     //网站列表
