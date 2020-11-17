@@ -75,6 +75,7 @@ class PddApi{
      * @return mixed
      */
     public function getAccessToken(){
+
         if (!empty($_GET['code'])) {
             $this->setCode(trim($_GET['code']));
         }

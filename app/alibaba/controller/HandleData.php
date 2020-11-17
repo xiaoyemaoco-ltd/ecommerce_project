@@ -2,7 +2,7 @@
 
 
 namespace app\alibaba\controller;
-
+use app\api\controller\Api;
 use app\alibaba\controller\HttpClient;
 use app\BaseController;
 use app\Request;
@@ -43,16 +43,22 @@ class HandleData extends BaseController
         $namespace = 'com.alibaba.product';
         $apiName = 'alibaba.product.add';
 
-        $goodsId = explode(',', $ids);
-        foreach ($goodsId as $id) {
-            $row = Redis::get($id . '_product_info');
-            if ($row) {
-                $row = unserialize($row);
-                $row['access_token'] = $this->access_token;
-                $this->getAPiData($row, $namespace, $apiName);
-            }
+//        $goodsId = explode(',', $ids);
+//        foreach ($goodsId as $id) {
+//            $row = Redis::get($id . '_product_info');
+//            if ($row) {
+//                $row = unserialize($row);
+//                $row['access_token'] = $this->access_token;
+//                $this->getAPiData($row, $namespace, $apiName);
+//            }
+//        }
+        $row = Redis::get($ids . '_product_info');
+        if ($row) {
+            $row = unserialize($row);
+            $row['access_token'] = $this->access_token;
+            $this->getAPiData($row, $namespace, $apiName);
         }
-        return return_value('ok', '上传成功', 10000);
+        return return_value('ok', '发布成功', 10000);
     }
 
     /**
@@ -72,15 +78,17 @@ class HandleData extends BaseController
             'sendGoodsAddressText' => $addressCodeText,
             'sendGoodsAddressId' => $fromAreaCode
         ];
-        $ids = $request->post('goodsids');
-        if (!$ids) return return_value('fail', '商品ID不能为空', 10003);
+        $goodsid = $request->post('goodsids');
+        if (!$goodsid) return return_value('fail', '商品ID不能为空', 10003);
 
-        $goodsId = explode(',', $ids);
-
-        foreach ($goodsId as $id) {
-            $row = $this->getDoodsDetail($id, $shipInfo);
-            Redis::set($id . '_product_info', serialize($row), 604800);
-        }
+//        $goodsId = explode(',', $ids);
+//
+//        foreach ($goodsId as $id) {
+//            $row = $this->getDoodsDetail($id, $shipInfo);
+//            Redis::set($id . '_product_info', serialize($row), 604800);
+//        }
+        $row = $this->getDoodsDetail($goodsid, $shipInfo);
+        Redis::set($goodsid . '_product_info', serialize($row), 604800);
         return return_value('ok', '获取info成功', 10000);
     }
 
@@ -124,8 +132,13 @@ class HandleData extends BaseController
      * @param $goodsId
      * @return \think\response\Json
      */
-    protected function imageUpload($goodsId)
+    public function imageUpload(Request $request)
     {
+        header('HTTP/1.1 204 No Content');
+        if (!$request->isPost()) return return_value('fail', '请求方式错误', 10001);
+        $goodsId = $request->post('goodsids');
+        if (!$goodsId) return return_value('fail', '商品ID不能为空', 10003);
+
         $goodsDetail = Redis::get($goodsId . '_product_detail');
         if (!$goodsDetail) {
             $obapi = $this->openkey();
@@ -144,6 +157,7 @@ class HandleData extends BaseController
         } else {
             $goodsDetail = unserialize(Redis::get($goodsId . '_product_detail'));
         }
+
         $albumID = $this->getAlbumId();
         if (!$albumID) return return_value('fail', '店铺相册已满', '10004');
         //上传产品图片到相册
@@ -180,6 +194,57 @@ class HandleData extends BaseController
             }
             Redis::set($goodsId . '_product_detail_url', '<p>' . $detailImg . '</p>', 604800);
         }
+        return return_value('ok', '获取图片成功', '10000');
+    }
+
+    public function testImage ($goodsId)
+    {
+        $goodsDetail = Redis::get($goodsId . '_product_detail');
+        if (!$goodsDetail) {
+            $obapi = $this->openkey();
+            $goodsDetail = $obapi->exec([
+                "api_type" => "taobao",
+                "api_name" => "item_get",
+                'api_params' => [
+                    'num_iid' => $goodsId,
+                    'is_promotion' => true
+                ]
+            ]);
+            if($goodsDetail['error'] == "item-not-found"){
+                return false;
+            }
+            Redis::set($goodsId . '_product_detail', serialize($goodsDetail), 604800);
+        } else {
+            $goodsDetail = unserialize(Redis::get($goodsId . '_product_detail'));
+        }
+        $albumID = $this->getAlbumId();
+        if (!$albumID) return return_value('fail', '店铺相册已满', '10004');
+        //上传产品图片到相册
+        $productImg = [];
+        $images = array_column($goodsDetail['item']['item_imgs'], 'url');
+        foreach ($images as $v) {
+            $productImg[] = 'https://cbu01.alicdn.com/' . $this->imageUploadAlbum('http:' . $v, $albumID);
+        }
+        Redis::hSet('product_images_url', $goodsId, serialize($productImg));
+
+        //上传skuInfo图片
+        $skuImages = [];
+        $propsImg = array_column($goodsDetail['item']['prop_imgs']['prop_img'], 'url');
+        $i = 0;
+        foreach ($propsImg as $v) {
+            $skuImages[] = 'https://cbu01.alicdn.com/' . $this->imageUploadAlbum('http:' . $v, $albumID);
+            $i++;
+            if ($i == 5) break;
+        }
+        Redis::hSet('product_skuInfo_url', $goodsId, serialize($skuImages));
+
+        //上传详情图片
+        $detailImg = '';
+        $img = array_slice($goodsDetail['item']['desc_img'],0,10);
+        foreach ($img as $v) {
+            $detailImg .=  '<img src="https://cbu01.alicdn.com/' . $this->imageUploadAlbum('http:' . $v, $albumID) . '" />';
+        }
+        Redis::hSet('product_detail_url', $goodsId, '<p>' . $detailImg . '</p>');
         return return_value('ok', '获取图片成功', '10000');
     }
 
@@ -230,7 +295,7 @@ class HandleData extends BaseController
         //上传图片到相册
         $img = unserialize(Redis::get($goodsId . '_product_images_url'));
 
-        $title = strlen($goodsDetail['item']['title']) > 30 ? mb_substr($goodsDetail['item']['desc'], 0, 30) : $goodsDetail['item']['title'];
+        $title = strlen($goodsDetail['item']['title']) > 30 ? mb_substr($goodsDetail['item']['title'], 0, 30) : $goodsDetail['item']['title'];
         $desc = Redis::get($goodsId . '_product_detail_url');
         $row = [
             'productType' => 'wholesale',
@@ -294,7 +359,78 @@ class HandleData extends BaseController
 //        $data = $this->getAlbumId();
 //        $data = $this->imageUpload(575748400801);
 //        $data = $this->getCategoryByKeyword('浴巾');
-        dump($request->domain());die;
+
+        $ids = $request->post('goodsids');
+        if (!$ids) return return_value('fail', '商品ID不能为空', 10003);
+        $goodsId = explode(',', $ids);
+        foreach ($goodsId as $id) {
+            Redis::lPush('goodsIds', $id);
+        }
+        dump(Redis::lLen('goodsIds'));
+    }
+
+    /**
+     * 获取商品链接
+     * @param Request $request
+     * @return \think\response\Json
+     */
+    public function getProductLink (Request $request)
+    {
+//        dump($this -> uid);die;
+        if (!$request->isGet()) return return_value('fail', '请求方式错误', 10001);
+        $data = unserialize(Redis::get('taobao_1688'));
+        if ($data) {
+            return return_value('ok', '获取链接成功', 10000, $data);
+        } else {
+            return return_value('fail', '获取链接失败,请先采集数据', 10004);
+        }
+    }
+
+    /**
+     * 获取商品列表
+     * @param Request $request
+     * @return \think\response\Json
+     */
+    public function getProductList (Request $request)
+    {
+        if (!$request->isGet()) return return_value('fail', '请求方式错误', 10001);
+        $pageNo = $request->get('pageNo');
+        $pageSize = $request->get('pageSize');
+        $namespace = 'com.alibaba.product';
+        $apiName = 'alibaba.product.list.get';
+//        $apiName = 'alibaba.product.getList';
+        $data = [
+            'pageNo' => $pageNo,
+            'pageSize' => $pageSize,
+            'webSite' => '1688',
+            'access_token' => $this->access_token
+        ];
+        $res = $this->getAPiData($data, $namespace, $apiName);
+        if ($res['success']) {
+            return return_value('ok', '获取商品成功', 10000, $res['result']['pageResult']['resultList']);
+        } else {
+            return return_value('fail', '获取列表失败', 10004);
+        }
+    }
+
+    /**
+     * 删除商品
+     * @param Request $request
+     * @return \think\response\Json
+     */
+    public function productDel (Request $request)
+    {
+        if (!$request->isPost()) return return_value('fail', '请求方式错误', 10001);
+        $proId = $request->post('productID');
+        $data = [
+            'productID' => $proId,
+            'webSite' => '1688',
+            'access_token' => $this->access_token
+        ];
+        $namespace = 'com.alibaba.product';
+        $apiName = 'alibaba.product.delete';
+        $res = $this->getAPiData($data, $namespace, $apiName);
+        return return_value('ok', $res['reason'], 10000);
     }
 
     public function getSku()
@@ -389,6 +525,18 @@ class HandleData extends BaseController
             if ($v['imageCount'] < 500) {
                 $albumId = $v['albumID'];
             }
+        }
+        //新建相册
+        if ($albumId == '') {
+            $row = [
+                'webSite' => '1688',
+                'access_token' => $this->access_token,
+                'authority' => 1,
+                'name' => rand(10000, 99999) . '_相册'
+            ];
+            $apiName1 = 'alibaba.photobank.album.add';
+            $res = $this->getAPiData($row, $namespace, $apiName1);
+            $albumId = $res['albumID'];
         }
         return $albumId;
     }

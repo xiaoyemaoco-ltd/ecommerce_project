@@ -24,34 +24,29 @@ class Download extends BaseController{
         return $this->fetch();
     }
 
-
-
-    //扫码下载聊天软件
     //扫码下载聊天软件
     //http://www.sxtyyd.com/api/download/download
     //chat.zp600.com/api/api/download
-    public function download(){
-        // $app_version = $this->smsyem_version();
+    public function download($ids=''){
         //查询当前的文件路径
-        // $details = Db::name('version_upgrade')->where('app_version', $app_version)->find();
-        $file_path = SHUJUCUNCHU.'/software/wujing.exe';
-
-        // $file_path = __PUBLIC__ .'/uploads/H5F9DCF7B.apk';
-        if (file_exists($file_path)) {
-            header('Content-Description: File Transfer');
-            header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename=' . basename($file_path));
-            header('Content-Transfer-Encoding: binary');
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-            header('Pragma: public');
-            header('Content-Length: ' . filesize($file_path));
-            ob_clean();
-            flush();
-            readfile($file_path);
-            exit;
+        $details = Db::name('app_version')->where('id', $ids)->find();
+        if(empty($details)){
+            return '路径不存在';
         }
+        downloadFile($details['spath']);
+    }
 
+
+    public function update_version($edition='',$version = '',$appid = ""){
+        $appid = input('appid');
+        $details = Db::name('app_version') -> field('id,name,title,version_id,version_tip,spath')
+            -> where(['edition'=>smsyem_version(),'appid' => $appid]) ->find();
+        $data = [
+            'version' => $details['version_id'],
+            'version_tip' => explode('|',$details['version_tip']),
+            'updownload'=> $this -> request-> domain().'/api/download?ids='.$details['id'],
+        ];
+        return json_encode(['status'=>'OK','data'=>$data]);
     }
 
     //http://chat.zp600.com/api/api/ewmdownload
@@ -64,7 +59,7 @@ class Download extends BaseController{
     //http://chat.zp600.com/api/api/updatedownlod
     public function updatedownlod()
     {
-        $app_version = $this->smsyem_version();
+        $app_version = smsyem_version();
         //查询当前的文件路径
         $details = Db::name('version_upgrade')->where('app_version', "Android")->find();
         $file_path = __PUBLIC__ . $details['uppath'];
@@ -84,55 +79,6 @@ class Download extends BaseController{
         }
     }
 
-    //判断系统平台
-    public function smsyem_version()
-    {
-        if (strpos($_SERVER['HTTP_USER_AGENT'], 'iPhone') || strpos($_SERVER['HTTP_USER_AGENT'], 'iPad')) {
-            $app_version = "IOS";
-        } else if (strpos($_SERVER['HTTP_USER_AGENT'], 'Android')) {
-            $app_version = "Android";
-        } else {
-            $app_version = "other";
-        }
-        return $app_version;
-    }
-
-
-    //检测更新接口
-    public function check_version()
-    {
-        $app_version = $this->smsyem_version();
-        $versionId = (int)input('version_id');
-        if (empty($versionId)) {
-            return apiFail('401', '参数不能为空');
-        }
-        // 获取版本升级信息
-        $versionUpgrade = Db::name('version_upgrade')->where('app_version', $app_version)->find();
-        // $versionUpgrade = Db::name('version_upgrade') -> where('app_version',$app_version) -> find();
-        if ($versionUpgrade) {
-            // 要升级 并且 当前版本号小于要升级的版本号
-            if ($versionUpgrade['type'] && $versionId < $versionUpgrade['version_id']) {
-                // 要升级
-                $upcode = 1;
-                $data = [
-                    'upcode' => $upcode,
-                    'data' => $versionUpgrade
-                ];
-                return apiSuccess($data, '版本升级信息获取成功');
-            } else {
-                // 不升级
-                $upcode = 0;
-                $data = [
-                    'upcode' => $upcode,
-                    'data' => $versionUpgrade
-                ];
-                return apiSuccess($data, '没有更新的内容');
-            }
-        } else {
-            return apiFail('400', '版本升级信息获取失败');
-        }
-
-    }
 
     //检测更新接口(电脑端)
     public function check_versiono()

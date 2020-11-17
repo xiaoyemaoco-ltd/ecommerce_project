@@ -8,6 +8,12 @@
 use fast\Form;
 use fast\Tree;
 use think\facade\Db;
+
+define('SHUJUCUNCHU',app()->getRootPath().'public');
+if(!is_dir(SHUJUCUNCHU)){
+    mkdir(SHUJUCUNCHU,0777,true);
+}
+
 //use app\common\model\Category;
 if (! function_exists('build_heading')) {
     /**

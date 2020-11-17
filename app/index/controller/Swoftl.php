@@ -15,9 +15,9 @@ use think\View;
 class Swoftl extends BaseController{
 
     public function index(Request $request){
-        $access_token = $request->get('token');
+        $access_token = $request->get('access_token');
 //        $token = decrypt($access_token, env('app.app_key'));
-        if ($access_token) Redis::set('alibaba_access_token', $access_token, 36000);
+        if ($access_token) Redis::set('alibaba_access_token', $access_token, 3600);
         return $this->fetch();
     }
 

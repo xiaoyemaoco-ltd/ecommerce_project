@@ -97,30 +97,35 @@ class Api{
         $this->setRequestUri($path);
         // 检测是否需要验证登录 无登录方法跳转
         if($this -> match($this->noNeedLogin)) return true;
-        $token = input('token');
+//        $token = input('token');
         $this -> uid = Session::get('userid')['uid'];
         if($this -> match($this->noNeedToken)){return true;};
         //检测是否登录
+
+        if(empty($this -> uid) ){
+            return false;
+         }
+       
         /*if(empty($token)){
             exit(json_encode($this->error('401','请登录后操作')));
         }*/
-        $filed = "b.id as uid,b.user_name as username,b.user_status,a.*";
-        $result = Db::name('user_token')
-            -> alias('a') -> join('user b','a.user_id=b.id')
-            -> where(['a.token'=>$token]) -> field($filed) -> find() ;
-        if(empty($result)){
-            exit(json_encode($this->error('401','token 有误！')));
-        }
-        if ($result['user_status'] != 1){
-            exit(json_encode($this->error('401','token不能为空！'))) ;
-        }
-        if(time() - $result['update_token_time'] > 0){
-            Db::name('user') -> where('id',$result['uid']) -> update(['1ogin_status'=>0]);
-            exit(json_encode($this->error('401','登录已过期,请重新登录！')));
-        }
-        $new_time_out = time() + 604800;//604800是七天
-        Db::name('user_token') -> where('user_id',$result['uid']) -> update(['update_token_time'=> $new_time_out]);
-        unset($result['user_status']);
+//        $filed = "b.id as uid,b.user_name as username,b.user_status,a.*";
+//        $result = Db::name('user_token')
+//            -> alias('a') -> join('user b','a.user_id=b.id')
+//            -> where(['a.token'=>$token]) -> field($filed) -> find() ;
+//        if(empty($result)){
+//            exit(json_encode($this->error('401','token 有误！')));
+//        }
+//        if ($result['user_status'] != 1){
+//            exit(json_encode($this->error('401','token不能为空！'))) ;
+//        }
+//        if(time() - $result['update_token_time'] > 0){
+//            Db::name('user') -> where('id',$result['uid']) -> update(['1ogin_status'=>0]);
+//            exit(json_encode($this->error('401','登录已过期,请重新登录！')));
+//        }
+//        $new_time_out = time() + 604800;//604800是七天
+//        Db::name('user_token') -> where('user_id',$result['uid']) -> update(['update_token_time'=> $new_time_out]);
+//        unset($result['user_status']);
 
 
 
@@ -132,6 +137,31 @@ class Api{
 //        Config::set(array_merge(Config::get('upload'), $upload), 'upload');
     }
 
+
+    //登录 token 验证
+    public function logintoken($token){
+        if(empty($token)){
+            return $this -> error('1001','token不能为空！');
+        }
+        $filed = "b.id as uid,b.user_name as username,b.user_status,a.*";
+        $result = Db::name('user_token')
+            -> alias('a') -> join('user b','a.user_id=b.id')
+            -> where(['a.token'=>$token]) -> field($filed) -> find();
+        if(empty($result)){
+            return $this -> error('1001','token 有误！');
+        }
+        if(time() - $result['update_token_time'] > 0){
+            Db::name('user') -> where('id',$result['uid']) -> update(['login_status'=>0]);
+            return $this -> error('1001','登录已过期,请重新登录！');
+        }else{
+            $new_time_out = time() + 7200;//2小时
+            Db::name('user_token') -> where('user_id',$result['uid']) -> update(['update_token_time'=> $new_time_out]);
+            unset($result['user_status']);
+            $data2=['uid'=>$result['uid'],'username'=>$result['username']];
+            Session::set('userid',$data2);
+            return $this -> success('200','','');
+        }
+    }
 
     protected function token($token){
         if(empty($token)){
@@ -153,6 +183,7 @@ class Api{
             return 4;
         }
     }
+
 
     //判断用户输入的验证码是否正确
    protected function check_varcode_prvite($mobile,$varcode){
@@ -292,13 +323,7 @@ class Api{
         $this->failException = $fail;
         return $this;
     }
-
-
-
-
-
-
-
+    
 
     // 判断是否手机访问
     protected function isMobile(){

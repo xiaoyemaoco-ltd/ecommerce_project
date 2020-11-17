@@ -16,7 +16,7 @@ class CheckAlibabaAccessToken
     public function handle($request, \Closure $next)
     {
         if (!Redis::get('alibaba_access_token')) {
-            return json(['status' => 'fail', 'msg' => 'ACCESS_TOKEN过期,请授权登录', 'code' => 11001]);
+            return json(['status' => 'fail', 'msg' => 'ACCESS_TOKEN过期,请重新授权登录', 'code' => 11001]);
         }
         return $next($request);
     }

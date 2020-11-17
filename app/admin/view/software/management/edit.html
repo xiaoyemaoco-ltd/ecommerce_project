@@ -26,21 +26,19 @@
     <div class="form-group">
         <label  class="control-label col-xs-12 col-sm-2">小版本号:</label>
         <div class="col-xs-12 col-sm-8">
-            <input type="text" class="form-control" id="version_mini" name="row[version_id]" value="{$row.version_id}" readonly/>
+            <input type="text" class="form-control" id="version_mini" name="row[version_mini]" value="{$row.version_id}" readonly/>
         </div>
     </div>
     <div class="form-group">
         <label  class="control-label col-xs-12 col-sm-2">大版本号:</label>
         <div class="col-xs-12 col-sm-8">
-            <input type="text" class="form-control" id="version_id" name="row[version_id]" value="" data-rule="required;version_id" />
+            <input type="text" class="form-control" id="version_id" name="row[version_id]" value="" data-rule="required;version_id" placeholder="请填写 如1.1.1" />
         </div>
     </div>
-
-
     <div class="form-group">
-        <label  class="control-label col-xs-12 col-sm-2">版本标识:</label>
+        <label  class="control-label col-xs-12 col-sm-2">升级提示:</label>
         <div class="col-xs-12 col-sm-8">
-            <input type="text" class="form-control" id="version_code" name="row[version_code]" data-rule="required;version_code"   />
+            <input type="text" class="form-control" id="version_tip" name="row[version_tip]"  placeholder="多条以|分割" />
         </div>
     </div>
 
@@ -50,10 +48,10 @@
             <div class="input-group">
                 <input id="c-spath" data-rule="" class="form-control" size="50" name="row[spath]" type="text" value="{$row.spath}">
                 <div class="input-group-addon no-border no-padding">
+                    <input type="file" accept="" name="product"   id="filepath"   style="display: none" >
                     <span>
-                        <button type="button" id="plupload-spath" class="btn btn-danger plupload" data-input-id="c-arturl"
-                                data-mimetype=".apk" data-multiple="false" data-preview-id="p-spath">
-                        <i class="fa fa-upload"></i> 上传
+                        <button type="button" id="btu_path" class="btn btn-danger " >
+                           <i class="fa fa-upload"></i> 上传
                         </button>
                     </span>
                 </div>
@@ -63,15 +61,16 @@
         </div>
     </div>
     <div class="form-group">
+
         <label  class="control-label col-xs-12 col-sm-2">上传更新文件:</label>
         <div class="col-xs-12 col-sm-8">
             <div class="input-group">
-                <input id="c-upspath" data-rule="" class="form-control" size="50" name="row[spath]" type="text" value="{$row.upspath}">
+                <input id="c-upspath" data-rule="" class="form-control" size="50" name="row[upspath]" type="text" value="{$row.upspath}">
                 <div class="input-group-addon no-border no-padding">
+                    <input type="file" accept=".yml" name="product"   id="fileuppath" style="display: none" >
                     <span>
-                        <button type="button" id="plupload-upspath" class="btn btn-danger plupload" data-input-id="c-arturl"
-                                data-mimetype="image/gif,image/jpeg,image/png,image/jpg,image/bmp" data-multiple="false" data-preview-id="p-upspath">
-                        <i class="fa fa-upload"></i> 上传
+                        <button type="button" id="btu-upspath" class="btn btn-danger" >
+                            <i class="fa fa-upload"></i> 上传
                         </button>
                     </span>
                 </div>
@@ -108,3 +107,4 @@
         </div>
     </div>
 </form>
+

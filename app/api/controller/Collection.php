@@ -13,12 +13,13 @@ use think\facade\Cache;
 use fast\Redis;
 use DsfApi\TaoBao;
 class Collection extends Api{
-    protected $noNeedLogin = ['filter'];
-    protected $noNeedToken = ['collection_download'];
+    protected $noNeedLogin = ['filter','test','goodslist'];
+    protected $noNeedToken = ['collection_download','goodslist'];
     protected $pathfile = null;//保存的物理路径
     protected $path = null;//根路径
     public function initialize(){
         parent::initialize();
+//        $this -> uid = $this -> uid ?? 1;
         $this -> path = "/collection";
         $this -> pathfile = date('Y年m月d日 H时i分s秒').'采集自动保存.txt';
     }
@@ -38,33 +39,34 @@ class Collection extends Api{
         if(!$keyword){
            return  $this->error('401','关键词不能为空');
         }
-        $page =  empty($request->post('page')) ?  1 : $request->post('page');
+        $page =  $request->post('page') ??  1;
         $start_price = $request->post('start_price') ?? '';
         $end_price = $request->post('end_price') ?? '';
         $arraydata = [];
         switch ($type){
             case 'taobao':
                 $sort = 'sale';
-                $arraydata =  TaoBao::taobaoserch($keyword,$page,$start_price,$end_price,$sort);
-                Redis::set($this->uid.$type,serialize($arraydata),86400);
+                $arraydata =  TaoBao::taobaoserch($keyword,$page,floatval($start_price),floatval($end_price),$sort);
+                Redis::set($type.$this->uid,serialize($arraydata),18000);
+                Redis::set($type.'_1688',serialize($arraydata),7200);
                 break;
             case '1688';
                 break;
         }
         //保存路径
-        if(!is_dir(SHUJUCUNCHU.$this -> path)){
-            mkdir(SHUJUCUNCHU.$this -> path,0777,true);
-        }
-        $file = SHUJUCUNCHU . $this -> path."/". $this -> pathfile;// 写入的文件
-        $myfile = fopen($file, "w") or die("Unable to open file!");
-        foreach ($arraydata as $k=>$v){
-            $content = $v['detail_url']."\r\n" ; // 写入的zhi内容
-//                file_put_contents($file,$content,FILE_APPEND); // 最简单的快速的以追加的方式写入写入方法，
-            fwrite($myfile, $content);
-        }
-        fclose($myfile);
+//        if(!is_dir(SHUJUCUNCHU.$this -> path)){
+//            mkdir(SHUJUCUNCHU.$this -> path,0777,true);
+//        }
+//        $file = SHUJUCUNCHU . $this -> path."/". $this -> pathfile;// 写入的文件
+//        $myfile = fopen($file, "w") or die("Unable to open file!");
+//        foreach ($arraydata as $k=>$v){
+//            $content = $v['detail_url']."\r\n" ; // 写入的zhi内容
+////                file_put_contents($file,$content,FILE_APPEND); // 最简单的快速的以追加的方式写入写入方法，
+//            fwrite($myfile, $content);
+//        }
+//        fclose($myfile);
         $data = [
-            'path' => $this -> pathfile,
+//            'path' => $this -> pathfile,
             'data' => $arraydata,
         ];
         return $this->success('200','获取成功',$data);
@@ -78,7 +80,23 @@ class Collection extends Api{
         downloadFile($this -> path.'/'.$pathfile);
     }
 
+    //产品信息列表
+    public function getgoodlist(Request $request){
+        $type = $request -> get('type');
+        if(!$type){
+            return $this->error('401','请选择所采集的对应平台!');
+        }
+        $data = unserialize(Redis::get($type.$this->uid));
+//        $data = array_slice($data,14,1);
+        return $this->success('200','获取成功',$data);
+    }
 
+
+    public function test($goodsid){
+
+        $res = Cache::get('taobao'.$goodsid);
+        dump($res);die;
+    }
 
     /*
      * 过滤商品
@@ -88,19 +106,42 @@ class Collection extends Api{
      *
     */
     public function filter(Request $request){
-        $filtertype = $request -> get('filtertype');
-        $goodsid = $request-> get('goodsids');
-        switch ($filtertype){
-            case 1:
-                if(Cache::get("$goodsid")){}
-                $res = $this -> gooddelties($goodsid);
-                $row = serialize($res);
-                Cache::set("$goodsid",$row);
-                dump($res);
-                break;
-        }
+        $goodids = $request -> get('goodids');
+//        dump(Redis::get($goodids.'_productdetail_title'));die;
+        $data['title'] = Redis::get($goodids.'_title');
+        $data['zhutus'] = unserialize(Redis::get($goodids.'_product_images_url'));
+        $data['descimg'] = unserialize(Redis::get($goodids.'_product_descImg'));
+        return $this->success('200','获取成功',$data);
+//        $filtertype = $request -> get('filtertype');
+//        $goodsid = $request-> get('goodsids');
+//        switch ($filtertype){
+//            case 1:
+//                if(Cache::get("$goodsid")){}
+//                $res = $this -> gooddelties($goodsid);
+//                $row = serialize($res);
+//                Cache::set("$goodsid",$row);
+//                dump($res);
+//                break;
+//        }
     }
 
+    public function goodeditsave(Request $request){
+        $goodsid = $request->post('goodid');
+        $title = $request->post('title');
+        $goodeditzhutuvalue = $request->post('goodeditzhutuvalue');
+        $goodeditdelvalue = $request->post('goodeditdelvalue');
+//        if(is_arary($goodeditzhutuvalue)){
+        $goodeditzhu = explode(',',$goodeditzhutuvalue);
+        $goodeditdel = explode(',',$goodeditdelvalue);
+//        }
+
+//        Redis::set($goodsid.'_title',$title, 10);
+        Redis::set($goodsid.'_title',$title, 10000);
+        Redis::set($goodsid.'_product_images_url', serialize($goodeditzhu), 604800);
+        Redis::set($goodsid.'_product_descImg', serialize($goodeditdel), 604800);
+//        dump(Redis::get($goodsid.'_productdetail_title'));die;
+        return $this -> success('200','保存成功',[]);
+    }
 
     //获取商品详情
     public function one_details(Request $request){
@@ -120,47 +161,5 @@ class Collection extends Api{
         Cache::set("$strnumids",$array);
         return  $this->success('2','获取详情成功');
     }
-
-    //判断商品是否存在
-    public function istaobaogoods($goodsid){
-        $goodsdata = [];
-        $info = Db::name('goodsinfo')->where(['goods_id' => $goodsid])->find();
-        if(empty($info)){
-            $taoabo_detile = $this -> gooddelties($goodsid);
-            if(empty($taoabo_detile)) return;
-            $goodsdata['goods_id'] = $taoabo_detile['num_iid'];
-            $goodsdata['cat_id'] = $taoabo_detile['cid'];
-            $goodsdata['cat_name'] = $taoabo_detile['cat_name'];//分类名称
-            $goodsdata['root_cat_name'] = $taoabo_detile['root_cat_name'];//父级分类名称
-            $goodsdata['root_cat_id'] = $taoabo_detile['rootCatId'];//顶级分类ID
-            $goodsdata['good_detile'] = json_encode($taoabo_detile);//顶级分类ID
-            $goodsdata['create_time'] =getday()['week'];
-            Db::name('goodsinfo') -> insert($goodsdata);
-        }else{
-            if (time() - strtotime($info['create_time']) > 0) {
-                $taoabo_detile = $this -> gooddelties($goodsid);
-                if(empty($taoabo_detile)) return;
-                $goodsdata['goods_id'] = $taoabo_detile['num_iid'];
-                $goodsdata['cat_id'] = $taoabo_detile['cid'];
-                $goodsdata['cat_name'] = $taoabo_detile['cat_name'];//分类名称
-                $goodsdata['root_cat_name'] = $taoabo_detile['root_cat_name'];//父级分类名称
-                $goodsdata['root_cat_id'] = $taoabo_detile['rootCatId'];//顶级分类ID
-                $goodsdata['good_detile'] = json_encode($taoabo_detile);//顶级分类ID
-                $goodsdata['create_time'] =getday()['week'];
-                Db::name('goodsinfo')->where('goods_id', $goodsid)->update($goodsdata);
-            }
-            $arr['cat_id'] = $info['cat_id'];
-            $arr['cat_name'] = $info['cat_name'];
-            $arr['good_detile'] = json_decode($info['good_detile'],true);
-        }
-        if(!empty($goodsdata)){
-            $arr['cat_id'] = $goodsdata['cat_id'];
-            $arr['cat_name'] = $goodsdata['cat_name'];
-            $arr['good_detile'] = json_decode($goodsdata['good_detile'],true);
-        }
-        return $arr;
-    }
-
-
 
 }
